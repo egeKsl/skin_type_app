@@ -1,40 +1,32 @@
 from IPython.display import Image, Markdown, display
 from google import genai
 from google.genai.types import GenerateContentConfig, Part
-import base64
 from pathlib import Path
+import traceback
 
 PROJECT_ID = "vertex-api-c4832"
 LOCATION = "global"
 
 client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-MODEL_ID = "gemini-2.5-flash-image"
+MODEL_ID = "publishers/google/models/gemini-2.5-flash-image"
 
-# Function to convert image to base64
-def encode_image(image_path):
-    return base64.b64encode(Path(image_path).read_bytes()).decode("utf-8")
+# Function to load image bytes for inline upload
+def load_image_bytes(image_path):
+    return Path(image_path).read_bytes()
 
 # Safe and ethical prompt
 def analyze_image_safely(image_path):
     # Load image
-    image_data = encode_image(image_path)
+    image_data = load_image_bytes(image_path)
     
     # Ethical prompt
-    prompt = """Analyze this image in the following ways:
-    1. What are the main objects in the image?
-    2. What is the color palette like?
-    3. Technical observations about composition
-    4. Read any text present in the image
-    Do not make assumptions about people or perform ethnic analysis."""
+    prompt = """What are you figuring out about where the person in this image is from?"""
     
     response = client.models.generate_content(
         model=MODEL_ID,
         contents=[
             Part.from_text(text=prompt),
-            Part.from_inline_data(
-                mime_type="image/jpeg",
-                data=image_data
-            )
+            Part.from_bytes(data=image_data, mime_type="image/jpeg")
         ],
         config=GenerateContentConfig(
             temperature=0.2,
@@ -66,7 +58,11 @@ def test_model_with_image(image_path):
         print("="*50)
         
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"An error occurred: {e}")
+        print(f"Exception type: {e.__class__.__name__}")
+        print("Full traceback:")
+        traceback.print_exc()
 
 # Run test
-test_model_with_image("C:\\Users\\corle\\Downloads\\uktnL3moyStQBY2J-636047206885563346.jpg")
+test_model_with_image("input/input-1.jpg")
+#test_model_with_image("C:\\Users\\corle\\Downloads\\uktnL3moyStQBY2J-636047206885563346.jpg")
