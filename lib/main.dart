@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'features/auth/views/screens/home_screen.dart';
+import 'features/home/views/screens/home_screen.dart';
 import 'constants/app_colors.dart';
 
 void main() {

@@ -5,8 +5,15 @@ import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 import '../widgets/menu_item_row.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  bool _isTopMenuExpanded = true;
 
   @override
   Widget build(BuildContext context) {
@@ -15,30 +22,96 @@ class HomeScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. ÜST MENÜ ALANI
-            Container(
-              padding: const EdgeInsets.only(top: 50, bottom: 20, left: 20, right: 20),
-              decoration: const BoxDecoration(
-                color: AppColors.darkMenu,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
-                children: const [
-                  MenuItemRow(icon: Icons.home, text: "Home"),
-                  SizedBox(height: 10),
-                  MenuItemRow(icon: Icons.person_outline, text: "Profile"),
-                  SizedBox(height: 10),
-                  MenuItemRow(icon: Icons.calendar_today, text: "Routine"),
-                  SizedBox(height: 10),
-                  MenuItemRow(icon: Icons.eco_outlined, text: "Natural Products"),
-                  SizedBox(height: 10),
-                  MenuItemRow(icon: Icons.favorite_border, text: "Favorite Ingredients"),
-                  SizedBox(height: 10),
-                  MenuItemRow(icon: Icons.help_outline, text: "Help"),
-                ],
+            // 1. ÜST MENÜ ALANI (içeri girip çıkabilen alan)
+            ClipRect(
+              child: AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _isTopMenuExpanded
+                    ? Container(
+                        padding: const EdgeInsets.only(
+                          top: 50,
+                          bottom: 20,
+                          left: 20,
+                          right: 20,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: AppColors.darkMenu,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(30),
+                            bottomRight: Radius.circular(30),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Menu',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isTopMenuExpanded = false;
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_up,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            const MenuItemRow(icon: Icons.home, text: "Home"),
+                            const SizedBox(height: 10),
+                            const MenuItemRow(icon: Icons.person_outline, text: "Profile"),
+                            const SizedBox(height: 10),
+                            const MenuItemRow(icon: Icons.calendar_today, text: "Routine"),
+                            const SizedBox(height: 10),
+                            const MenuItemRow(icon: Icons.eco_outlined, text: "Natural Products"),
+                            const SizedBox(height: 10),
+                            const MenuItemRow(icon: Icons.favorite_border, text: "Favorite Ingredients"),
+                            const SizedBox(height: 10),
+                            const MenuItemRow(icon: Icons.help_outline, text: "Help"),
+                          ],
+                        ),
+                      )
+                    : Align(
+                        alignment: Alignment.topCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.darkMenu,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isTopMenuExpanded = true;
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
               ),
             ),
 
