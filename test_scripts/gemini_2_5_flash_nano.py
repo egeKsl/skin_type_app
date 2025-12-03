@@ -64,5 +64,5 @@ def test_model_with_image(image_path):
         traceback.print_exc()
 
 # Run test
-test_model_with_image("input/input-1.jpg")
+test_model_with_image("input/input-6.jpg")
 #test_model_with_image("C:\\Users\\corle\\Downloads\\uktnL3moyStQBY2J-636047206885563346.jpg")
