@@ -1,0 +1,79 @@
+---
+alwaysApply: true
+---
+## Data Flow and State
+
+1. **Unidirectional flow**:  
+   - User action → View → ViewModel → Repository → Service → Generated API Client  
+   - Response → Generated API Client → Service → Repository → ViewModel → View  
+2. State updates only occur inside repositories (SSOT).  
+3. Views always rebuild based on immutable state from viewmodels.  
+4. Views contain minimal logic and depend on state.
+
+---
+
+## Extensibility and Testability
+
+1. Define clear interfaces for repositories and services.  
+2. Use **dependency injection** (`core/di/providers.dart`) to provide dependencies.  
+3. Test **ViewModels** by mocking repositories.  
+4. Test **Repositories** by mocking services or API client.  
+5. New features = add new folder under `features/` with the same structure.  
+6. If backend APIs change, regenerate the API client under `packages/` and keep services/repositories stable.  
+
+---
+
+## Best Practices
+
+1. Follow **separation of concerns** and layered design.  
+2. Use **MVVM** as the main architectural pattern.  
+3. Use key-value storage (`SharedPreferences`) for simple data and structured storage (Hive/SQLite) for complex data.  
+4. Apply **optimistic updates** for better UX.  
+5. Implement **offline-first strategies** where possible.  
+6. Extract reusable UI into `common/widgets/`.  
+7. Prefer `StatelessWidget` and `const` constructors.  
+8. Keep `build` methods clean; avoid heavy logic there.  
+9. Use pagination/lazy loading for large lists.  
+10. Scope state as locally as possible to avoid rebuilds.  
+11. Keep files short and single-responsibility.  
+12. Follow Dart naming conventions and use `dart format`.  
+13. Always use braces in control statements for safety.  
+
+## project architecture
+packages/
+   unique_flow_backend/
+      lib/
+         api/
+            /auth_user
+lib/
+  common/
+    constants/
+      app_constants.dart
+    theme/
+      app_theme.dart
+    widgets/
+  core/
+    database/
+    di/
+      providers.dart
+    navigation/
+      app_router.dart
+    services/
+    utils/
+  features/
+    auth/
+      repositories/
+      viewmodels/
+      views/
+        screens/
+        widgets/
+    home/
+      repositories/
+      viewmodels/
+      views/
+        screens/
+        widgets/
+  main.dart
+```
+
+---
