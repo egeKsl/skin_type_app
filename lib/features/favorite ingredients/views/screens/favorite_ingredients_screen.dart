@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skin_type_app/constants/app_colors.dart';
+import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import '../widgets/ingredient_item_card.dart'; // Oluşturduğumuz kartı import et
 
 class FavoriteIngredientsScreen extends StatefulWidget {
@@ -31,13 +31,18 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Icon(Icons.arrow_back, color: Colors.white),
-                Text(
+              children: [
+                const Icon(Icons.arrow_back, color: Colors.white),
+                const Text(
                   "Favorite Ingredients",
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                Icon(Icons.menu, color: Colors.white),
+                GestureDetector(
+                  onTap: () {
+                    showTopMenuOverlay(context);
+                  },
+                  child: const Icon(Icons.menu, color: Colors.white),
+                ),
               ],
             ),
           ),

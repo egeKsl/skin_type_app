@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
+import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import '../widgets/ai_recommendation_card.dart';
 import '../widgets/ingredient_card.dart';
 import '../widgets/usage_tip_card.dart';
@@ -33,10 +34,18 @@ class NaturalIngredientsScreen extends StatelessWidget {
                     // Navbar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Icon(Icons.arrow_back, color: Colors.white),
-                        Text("Natural Ingredients", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        Icon(Icons.menu, color: Colors.white),
+                      children: [
+                        const Icon(Icons.arrow_back, color: Colors.white),
+                        const Text(
+                          "Natural Ingredients",
+                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            showTopMenuOverlay(context);
+                          },
+                          child: const Icon(Icons.menu, color: Colors.white),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),

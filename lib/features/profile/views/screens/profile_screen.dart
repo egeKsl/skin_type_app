@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skin_type_app/constants/app_colors.dart';
+import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 // Yeni oluşturduğumuz widget'ları buraya çağırıyoruz:
 import '../widgets/stat_card.dart';
 import '../widgets/section_header.dart';
@@ -124,9 +124,14 @@ class ProfileScreen extends StatelessWidget {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Icon(Icons.arrow_back, color: Colors.white),
-                Icon(Icons.menu, color: Colors.white),
+              children: [
+                const Icon(Icons.arrow_back, color: Colors.white),
+                GestureDetector(
+                  onTap: () {
+                    showTopMenuOverlay(context);
+                  },
+                  child: const Icon(Icons.menu, color: Colors.white),
+                ),
               ],
             ),
           ),

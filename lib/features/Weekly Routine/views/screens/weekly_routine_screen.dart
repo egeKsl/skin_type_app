@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skin_type_app/constants/app_colors.dart';
+import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 // Widget Importları
 import '../widgets/day_selector_item.dart';
 import '../widgets/routine_step_tile.dart';
@@ -27,13 +27,18 @@ class WeeklyRoutineScreen extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Icon(Icons.arrow_back, color: Colors.white),
-                  Text(
+                children: [
+                  const Icon(Icons.arrow_back, color: Colors.white),
+                  const Text(
                     "Weekly Routine",
                     style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  Icon(Icons.menu, color: Colors.white),
+                  GestureDetector(
+                    onTap: () {
+                      showTopMenuOverlay(context);
+                    },
+                    child: const Icon(Icons.menu, color: Colors.white),
+                  ),
                 ],
               ),
             ),

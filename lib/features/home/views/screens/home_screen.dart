@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
 // Aşağıdaki importlar kendi oluşturduğumuz dosyaları sayfaya dahil eder
 import 'package:skin_type_app/constants/app_colors.dart';
-import 'package:skin_type_app/features/profile/views/screens/profile_screen.dart';
-import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
-import 'package:skin_type_app/features/natural ingredients/views/screens/natural_ingredients_screen.dart';
-import 'package:skin_type_app/features/favorite ingredients/views/screens/favorite_ingredients_screen.dart';
-import 'package:skin_type_app/features/help/views/screens/help_screen.dart';
+import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
-import '../widgets/menu_item_row.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,11 +13,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  // Başlangıçta menünün kapalı (veya Yüz Tanıma ekranının görünür) olduğunu varsayalım.
-  // Not: İlk fotoğrafta menü açıktı, ancak Yüz Tanıma ekranında kapalıydı.
-  // Bu kodu Yüz Tanıma ekranı (kapalı menü) varsayımıyla başlatıyorum.
-  bool _isTopMenuExpanded = false; 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,16 +20,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. ÜST MENÜ ALANI (içeri girip çıkabilen alan)
-            ClipRect(
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: _isTopMenuExpanded
-                    ? _buildExpandedMenu() // Menü Açık (Görsel 1: Menu.jpg)
-                    : _buildCollapsedHeader(), // Menü Kapalı (Görsel 2: Yüz Tanıma.jpg)
-              ),
-            ),
+            // 1. ÜST MENÜ ALANI
+            _buildCollapsedHeader(),
 
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -204,9 +186,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 // Menüyü açmak için sağ üstteki buton
                 GestureDetector(
                   onTap: () {
-                    setState(() {
-                      _isTopMenuExpanded = true;
-                    });
+                    showTopMenuOverlay(context);
                   },
                   child: const Icon(Icons.menu, color: Colors.black),
                 ),
@@ -275,128 +255,5 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // Menü AÇIKKEN görünen liste
-  Widget _buildExpandedMenu() {
-    return Container(
-      padding: const EdgeInsets.only(
-        top: 50,
-        bottom: 20,
-        left: 20,
-        right: 20,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.darkMenu,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _isTopMenuExpanded = false;
-                  });
-                },
-                icon: const Icon(
-                  Icons.keyboard_arrow_up,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          const MenuItemRow(icon: Icons.home, text: "Home"),
-          const SizedBox(height: 10),
-          MenuItemRow(
-            icon: Icons.person_outline,
-            text: "Profile",
-            onTap: () {
-              setState(() {
-                _isTopMenuExpanded = false;
-              });
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const ProfileScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          MenuItemRow(
-            icon: Icons.calendar_today,
-            text: "Routine",
-            onTap: () {
-              setState(() {
-                _isTopMenuExpanded = false;
-              });
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const WeeklyRoutineScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          MenuItemRow(
-            icon: Icons.eco_outlined,
-            text: "Natural Products",
-            onTap: () {
-              setState(() {
-                _isTopMenuExpanded = false;
-              });
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const NaturalIngredientsScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          MenuItemRow(
-            icon: Icons.favorite_border,
-            text: "Favorite Ingredients",
-            onTap: () {
-              setState(() {
-                _isTopMenuExpanded = false;
-              });
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const FavoriteIngredientsScreen(),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-          MenuItemRow(
-            icon: Icons.help_outline,
-            text: "Help",
-            onTap: () {
-              setState(() {
-                _isTopMenuExpanded = false;
-              });
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const HelpScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Önceden burada menü AÇIKKEN görünen liste vardı.
 }
