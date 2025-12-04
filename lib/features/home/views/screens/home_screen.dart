@@ -4,6 +4,7 @@ import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/features/profile/views/screens/profile_screen.dart';
 import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
 import 'package:skin_type_app/features/natural ingredients/views/screens/natural_ingredients_screen.dart';
+import 'package:skin_type_app/features/favorite ingredients/views/screens/favorite_ingredients_screen.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 import '../widgets/menu_item_row.dart';
@@ -364,7 +365,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             },
           ),
           const SizedBox(height: 10),
-          const MenuItemRow(icon: Icons.favorite_border, text: "Favorite Ingredients"),
+          MenuItemRow(
+            icon: Icons.favorite_border,
+            text: "Favorite Ingredients",
+            onTap: () {
+              setState(() {
+                _isTopMenuExpanded = false;
+              });
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const FavoriteIngredientsScreen(),
+                ),
+              );
+            },
+          ),
           const SizedBox(height: 10),
           const MenuItemRow(icon: Icons.help_outline, text: "Help"),
         ],
