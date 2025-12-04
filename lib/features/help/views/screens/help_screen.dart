@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skin_type_app/features/FAQ/views/screens/faq_screen.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -66,7 +67,13 @@ class HelpScreen extends StatelessWidget {
                     icon: Icons.help_outline,
                     label: "Support",
                     value: "FAQ",
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const FaqScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
