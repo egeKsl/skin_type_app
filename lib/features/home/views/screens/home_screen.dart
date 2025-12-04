@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // Aşağıdaki importlar kendi oluşturduğumuz dosyaları sayfaya dahil eder
 import 'package:skin_type_app/constants/app_colors.dart';
+import 'package:skin_type_app/features/profile/views/screens/profile_screen.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 import '../widgets/menu_item_row.dart';
@@ -13,7 +14,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  bool _isTopMenuExpanded = true;
+  // Başlangıçta menünün kapalı (veya Yüz Tanıma ekranının görünür) olduğunu varsayalım.
+  // Not: İlk fotoğrafta menü açıktı, ancak Yüz Tanıma ekranında kapalıydı.
+  // Bu kodu Yüz Tanıma ekranı (kapalı menü) varsayımıyla başlatıyorum.
+  bool _isTopMenuExpanded = false; 
 
   @override
   Widget build(BuildContext context) {
@@ -28,96 +32,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 child: _isTopMenuExpanded
-                    ? Container(
-                        padding: const EdgeInsets.only(
-                          top: 50,
-                          bottom: 20,
-                          left: 20,
-                          right: 20,
-                        ),
-                        decoration: const BoxDecoration(
-                          color: AppColors.darkMenu,
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(30),
-                            bottomRight: Radius.circular(30),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Menu',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isTopMenuExpanded = false;
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    Icons.keyboard_arrow_up,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            const MenuItemRow(icon: Icons.home, text: "Home"),
-                            const SizedBox(height: 10),
-                            const MenuItemRow(icon: Icons.person_outline, text: "Profile"),
-                            const SizedBox(height: 10),
-                            const MenuItemRow(icon: Icons.calendar_today, text: "Routine"),
-                            const SizedBox(height: 10),
-                            const MenuItemRow(icon: Icons.eco_outlined, text: "Natural Products"),
-                            const SizedBox(height: 10),
-                            const MenuItemRow(icon: Icons.favorite_border, text: "Favorite Ingredients"),
-                            const SizedBox(height: 10),
-                            const MenuItemRow(icon: Icons.help_outline, text: "Help"),
-                          ],
-                        ),
-                      )
-                    : Align(
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.darkMenu,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isTopMenuExpanded = true;
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    ? _buildExpandedMenu() // Menü Açık (Görsel 1: Menu.jpg)
+                    : _buildCollapsedHeader(), // Menü Kapalı (Görsel 2: Yüz Tanıma.jpg)
               ),
             ),
 
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
+                // ... (Ekranın kalan içeriği burada devam ediyor) ...
                 children: [
                   // 2. CURRENT ISSUES & RISKS (Widget Kullanımı)
                   const InfoSectionCard(
@@ -240,6 +163,183 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // --- YENİ EKLENEN/GÜNCELLENEN METOTLAR ---
+
+  // Menü KAPALIYKEN görünen Yüz Tanıma Başlık ve Görsel Alanı
+  Widget _buildCollapsedHeader() {
+    return Container(
+      padding: const EdgeInsets.only(top: 40, bottom: 20),
+      // Yüz tanıma görselinin altına gölge vermek için kutuyu genişletiyoruz
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 2,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Icon(Icons.arrow_back, color: Colors.black),
+                const Text(
+                  'Skin Analysis',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                // Menüyü açmak için sağ üstteki buton
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isTopMenuExpanded = true;
+                    });
+                  },
+                  child: const Icon(Icons.menu, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // YÜZ GÖRSELİ Placeholder
+          Container(
+            height: 250,
+            width: double.infinity,
+            color: Colors.grey[100], // Resim Placeholder'ı
+            child: Center(
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  //  // Yüz görseli için
+                  ClipOval(
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.face, size: 80, color: Colors.grey),
+                    ),
+                  ),
+                  
+                  // Analiz Çubuğu ve Yazı
+                  Positioned(
+                    bottom: 20,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.primaryPurple, width: 2),
+                          ),
+                          child: Row(
+                            children: const [
+                              SizedBox(
+                                width: 10,
+                                height: 10,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text('Analyzing your skin!', style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text('Analysis Results', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  // Menü AÇIKKEN görünen liste
+  Widget _buildExpandedMenu() {
+    return Container(
+      padding: const EdgeInsets.only(
+        top: 50,
+        bottom: 20,
+        left: 20,
+        right: 20,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.darkMenu,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isTopMenuExpanded = false;
+                  });
+                },
+                icon: const Icon(
+                  Icons.keyboard_arrow_up,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const MenuItemRow(icon: Icons.home, text: "Home"),
+          const SizedBox(height: 10),
+          MenuItemRow(
+            icon: Icons.person_outline,
+            text: "Profile",
+            onTap: () {
+              setState(() {
+                _isTopMenuExpanded = false;
+              });
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          const MenuItemRow(icon: Icons.calendar_today, text: "Routine"),
+          const SizedBox(height: 10),
+          const MenuItemRow(icon: Icons.eco_outlined, text: "Natural Products"),
+          const SizedBox(height: 10),
+          const MenuItemRow(icon: Icons.favorite_border, text: "Favorite Ingredients"),
+          const SizedBox(height: 10),
+          const MenuItemRow(icon: Icons.help_outline, text: "Help"),
+        ],
       ),
     );
   }
