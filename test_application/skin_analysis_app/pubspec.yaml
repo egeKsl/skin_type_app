@@ -1,0 +1,21 @@
+name: skin_analysis_app
+description: "Basit API Test Uygulaması"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.1  # API çağrısı için
+  image_picker: ^1.1.0  # Fotoğraf seçmek için
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
