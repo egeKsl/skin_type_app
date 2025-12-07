@@ -1,6 +1,5 @@
 const express = require('express');
 const multer = require('multer');
-// Vertex AI yerine Google Generative AI kütüphanesini kullanıyoruz
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const bodyParser = require('body-parser');
 require('dotenv').config(); // Load environment variables
@@ -28,7 +27,6 @@ let generativeModel;
 if (GEMINI_API_KEY && MODEL_NAME) {
     try {
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        // GenerativeModel'i burada başlatıyoruz
         generativeModel = genAI.getGenerativeModel({ 
             model: MODEL_NAME,
             config: {
@@ -119,7 +117,7 @@ app.post('/analyze-skin', upload.single('image'), async (req, res) => {
             console.error("Parse Error:", e);
         }
         res.json({ success: true, result: text || "EMPTY_RESPONSE" });
-        
+
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ success: false, error: error.message });
