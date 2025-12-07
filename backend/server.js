@@ -88,12 +88,15 @@ app.post('/analyze-skin', upload.single('image'), async (req, res) => {
             Note: Only provide text output, no markdown.`;
         
         
-        const contents = {
-            parts: [
-                { text: promptText },  
-                imagePart              
-            ]
-        };
+            const contents = [
+                {
+                    role: "user",
+                    parts: [
+                        { text: promptText },
+                        imagePart
+                    ]
+                }
+            ];
 
         console.log(`Sending request to model ${MODEL_NAME}...`);
         
@@ -104,15 +107,21 @@ app.post('/analyze-skin', upload.single('image'), async (req, res) => {
                 responseModalities: ["TEXT"]
             }
         });
-        const response = await result.response;
 
-    
-        const text = response.text; 
-
-        res.json({ success: true, result: text });
+        let text = "";
+        try {
+            if (result?.response?.candidates?.length > 0) {
+                const parts = result.response.candidates[0].content.parts;
+                const partWithText = parts.find(p => p.text);
+                text = partWithText?.text || "";
+            }
+        } catch (e) {
+            console.error("Parse Error:", e);
+        }
+        res.json({ success: true, result: text || "EMPTY_RESPONSE" });
+        
     } catch (error) {
         console.error("Error:", error);
-        // 403 hatası yerine burada 400 (Bad Request) veya 500 (Internal Server Error) alabilirsiniz.
         res.status(500).json({ success: false, error: error.message });
     }
 });
