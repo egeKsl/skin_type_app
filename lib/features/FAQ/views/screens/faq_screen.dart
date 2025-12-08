@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// 1. Adım: Veri Modeli
+// Veri Modeli (Değişmedi)
 class FaqItem {
   final String question;
   final String answer;
@@ -21,7 +21,7 @@ class FaqScreen extends StatefulWidget {
 }
 
 class _FaqScreenState extends State<FaqScreen> {
-  // Sıkça Sorulan Sorular Listesi
+  // Sıkça Sorulan Sorular Listesi (Veriler değişmedi)
   final List<FaqItem> _faqData = [
     FaqItem(
       question: "What does the app do?",
@@ -58,7 +58,6 @@ class _FaqScreenState extends State<FaqScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // Sade App Bar (Geri butonu ve Başlık)
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -80,14 +79,14 @@ class _FaqScreenState extends State<FaqScreen> {
             const SizedBox(height: 20),
 
             // Sıkça Sorulan Sorular Listesi
-            _buildExpansionPanelList(),
+            _buildCustomExpansionPanelList(),
           ],
         ),
       ),
     );
   }
 
-  // Arama Çubuğu Widget'ı
+  // Arama Çubuğu Widget'ı (Değişmedi)
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -107,54 +106,79 @@ class _FaqScreenState extends State<FaqScreen> {
     );
   }
 
-  // Genişletilebilir Paneller Listesi
-  Widget _buildExpansionPanelList() {
-    return ExpansionPanelList(
-      elevation: 0, // Kartlarda gölge yok
-      dividerColor: Colors.grey.shade100,
-      expansionCallback: (int index, bool isExpanded) {
-        setState(() {
-          _faqData[index].isExpanded = !isExpanded;
-        });
-      },
-      children: _faqData.map<ExpansionPanel>((FaqItem item) {
-        return ExpansionPanel(
-          canTapOnHeader: true, // Başlığa tıklayarak açma/kapama
-          backgroundColor: Colors.white,
-          isExpanded: item.isExpanded,
-          
-          // BAŞLIK KISMI (Soru)
-          headerBuilder: (BuildContext context, bool isExpanded) {
-            return ListTile(
-              title: Text(
-                item.question,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600, 
-                  fontSize: 16,
-                  color: Colors.black87
+  // ÖZEL Genişletilebilir Paneller Listesi (Görsele uyacak şekilde tamamen yeniden yazıldı)
+  Widget _buildCustomExpansionPanelList() {
+    return Column(
+      children: List.generate(_faqData.length, (index) {
+        FaqItem item = _faqData[index];
+        bool isExpanded = item.isExpanded;
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
-              ),
-              trailing: Icon(
-                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                color: Colors.black54,
-              ),
-            );
-          },
-          
-          // İÇERİK KISMI (Cevap)
-          body: Padding(
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 20.0),
-            child: Text(
-              item.answer,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
-                height: 1.4,
-              ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Başlık Alanı (Soru)
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _faqData[index].isExpanded = !isExpanded;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(15),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.question,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                          color: Colors.black54,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Cevap Alanı (Açıldığında Görünür)
+                if (isExpanded)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 18.0),
+                    child: Text(
+                      item.answer,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 }
