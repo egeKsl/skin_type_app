@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
-import 'package:skin_type_app/features/Data Service/data_service.dart';
+import 'package:skin_type_app/core/database/data_service.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 
