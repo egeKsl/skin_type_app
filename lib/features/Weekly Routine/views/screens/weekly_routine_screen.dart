@@ -1,12 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
-// Widget Importları
+import 'package:skin_type_app/core/database/data_service.dart';
 import '../widgets/day_selector_item.dart';
 import '../widgets/routine_step_tile.dart';
 import '../widgets/tips_card.dart';
 
-class WeeklyRoutineScreen extends StatelessWidget {
+class WeeklyRoutineScreen extends StatefulWidget {
   const WeeklyRoutineScreen({super.key});
+
+  @override
+  State<WeeklyRoutineScreen> createState() => _WeeklyRoutineScreenState();
+}
+
+class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
+  // Verileri tutacak değişkenler
+  Map<String, dynamic> _sabahRutini = {};
+  Map<String, dynamic> _aksamRutini = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoutineData();
+  }
+
+  // Veritabanından veriyi çeken fonksiyon
+  Future<void> _loadRoutineData() async {
+    final storage = SkinAnalysisStorage();
+    final loadedData = await storage.loadAnalysisData();
+
+    if (loadedData != null && loadedData['rutin'] != null) {
+      if (mounted) {
+        setState(() {
+          _sabahRutini = loadedData['rutin']['sabah_rutini'] ?? {};
+          _aksamRutini = loadedData['rutin']['aksam_rutini'] ?? {};
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,12 +53,12 @@ class WeeklyRoutineScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. HEADER ALANI (Mor Gradient Arka Plan)
+            // 1. HEADER ALANI
             Container(
               padding: const EdgeInsets.only(top: 50, bottom: 20, left: 16, right: 16),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF9575CD), Color(0xFFB39DDB)], // Mor tonları
+                  colors: [Color(0xFF9575CD), Color(0xFFB39DDB)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -51,7 +89,7 @@ class WeeklyRoutineScreen extends StatelessWidget {
                   const Text("Your personalized skincare plan", style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 20),
 
-                  // 2. GÜN SEÇİCİ (Yatay Liste)
+                  // 2. GÜN SEÇİCİ
                   SizedBox(
                     height: 80,
                     child: ListView(
@@ -69,59 +107,26 @@ class WeeklyRoutineScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 25),
 
-                  // 3. AM ROUTINE KARTI
+                  // 3. AM ROUTINE KARTI (DİNAMİK)
                   _buildRoutineSection(
                     title: "AM Routine",
                     headerIcon: Icons.wb_sunny_outlined,
                     headerIconColor: Colors.orange,
-                    children: [
-                      const RoutineStepTile(
-                        icon: Icons.water_drop, iconColor: Colors.blue, 
-                        title: "Cleanser", subtitle: "Gentle foam wash", isCompleted: true
-                      ),
-                      const RoutineStepTile(
-                        icon: Icons.science, iconColor: Colors.amber, 
-                        title: "Toner", subtitle: "Hydrating essence", isCompleted: true
-                      ),
-                      const RoutineStepTile(
-                        icon: Icons.colorize, iconColor: Colors.deepPurpleAccent, 
-                        title: "Serum", subtitle: "Vitamin C brightening", isCompleted: false
-                      ),
-                      const RoutineStepTile(
-                        icon: Icons.local_florist, iconColor: Colors.green, 
-                        title: "Moisturizer", subtitle: "Light gel cream", isCompleted: false
-                      ),
-                      const RoutineStepTile(
-                        icon: Icons.shield, iconColor: Colors.orangeAccent, 
-                        title: "SPF", subtitle: "Sunscreen SPF 50+", isCompleted: false
-                      ),
-                    ],
+                    // Eğer yükleniyorsa loading göster, yoksa listeyi oluştur
+                    children: _isLoading 
+                        ? [const Center(child: CircularProgressIndicator())]
+                        : _buildDynamicRoutineList(_sabahRutini),
                   ),
                   const SizedBox(height: 25),
 
-                  // 4. PM ROUTINE KARTI
+                  // 4. PM ROUTINE KARTI (DİNAMİK)
                   _buildRoutineSection(
                     title: "PM Routine",
                     headerIcon: Icons.dark_mode_outlined,
                     headerIconColor: Colors.indigo,
-                    children: [
-                      const RoutineStepTile(
-                        icon: Icons.auto_awesome, iconColor: Colors.pinkAccent, 
-                        title: "Makeup Remover", subtitle: "Micellar water", isCompleted: true
-                      ),
-                       const RoutineStepTile(
-                        icon: Icons.water_drop, iconColor: Colors.blue, 
-                        title: "Cleanser", subtitle: "Deep cleansing oil", isCompleted: true
-                      ),
-                      const RoutineStepTile(
-                        icon: Icons.science, iconColor: Colors.deepPurple, 
-                        title: "Treatment Serum", subtitle: "Retinol renewal", isCompleted: false
-                      ),
-                      const RoutineStepTile(
-                        icon: Icons.local_florist, iconColor: Colors.green, 
-                        title: "Moisturizer", subtitle: "Night repair cream", isCompleted: false
-                      ),
-                    ],
+                    children: _isLoading 
+                        ? [const Center(child: CircularProgressIndicator())]
+                        : _buildDynamicRoutineList(_aksamRutini),
                   ),
                   const SizedBox(height: 25),
 
@@ -129,7 +134,7 @@ class WeeklyRoutineScreen extends StatelessWidget {
                   const TipsCard(),
                   const SizedBox(height: 30),
 
-                  // 6. ALT BUTON (View Analyses)
+                  // 6. ALT BUTON
                   Container(
                     width: double.infinity,
                     height: 55,
@@ -167,7 +172,70 @@ class WeeklyRoutineScreen extends StatelessWidget {
     );
   }
 
-  // Rutin Kartlarını oluşturan yardımcı metod (AM ve PM için ortak yapı)
+  // --- YARDIMCI METOTLAR ---
+
+  // JSON Anahtarlarını (örn: nazik_jel_temizleyici) Güzel Başlıklara ve İkonlara Çeviren Fonksiyon
+  List<Widget> _buildDynamicRoutineList(Map<String, dynamic> routineData) {
+    if (routineData.isEmpty) {
+      return [const Text("No routine data available yet.", style: TextStyle(color: Colors.grey))];
+    }
+
+    return routineData.entries.map((entry) {
+      String key = entry.key;   // Örn: "nazik_jel_temizleyici"
+      String value = entry.value.toString(); // Örn: "Salicylic Acid..."
+
+      // Anahtara göre İkon, Renk ve Başlık Belirleme
+      IconData icon;
+      Color color;
+      String title;
+
+      if (key.contains("temizle")) {
+        icon = Icons.water_drop;
+        color = Colors.blue;
+        title = "Cleanser";
+      } else if (key.contains("tonik")) {
+        icon = Icons.science;
+        color = Colors.amber;
+        title = "Toner";
+      } else if (key.contains("serum")) {
+        icon = Icons.colorize;
+        color = Colors.deepPurpleAccent;
+        title = "Serum";
+      } else if (key.contains("nem")) {
+        icon = Icons.local_florist;
+        color = Colors.green;
+        title = "Moisturizer";
+      } else if (key.contains("gunes")) {
+        icon = Icons.shield;
+        color = Colors.orangeAccent;
+        title = "SPF";
+      } else if (key.contains("eksfoliasyon")) {
+        icon = Icons.autorenew;
+        color = Colors.pinkAccent;
+        title = "Exfoliator";
+      } else if (key.contains("nokta")) {
+        icon = Icons.add_circle_outline;
+        color = Colors.redAccent;
+        title = "Spot Treatment";
+      } else {
+        icon = Icons.star;
+        color = Colors.grey;
+        title = _capitalize(key.replaceAll("_", " ")); // Bilinmeyen anahtarı düzelt
+      }
+
+      return RoutineStepTile(
+        icon: icon,
+        iconColor: color,
+        title: title,
+        subtitle: value,
+        isCompleted: false, // Varsayılan olarak yapılmadı
+      );
+    }).toList();
+  }
+
+  // String ilk harf büyütme yardımcısı
+  String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);
+
   Widget _buildRoutineSection({required String title, required IconData headerIcon, required Color headerIconColor, required List<Widget> children}) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -190,7 +258,7 @@ class WeeklyRoutineScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          ...children, // Listeyi buraya açıyoruz
+          ...children,
         ],
       ),
     );
