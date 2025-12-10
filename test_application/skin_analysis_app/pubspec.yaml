@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   http: ^1.2.1  # API çağrısı için
   image_picker: ^1.1.0  # Fotoğraf seçmek için
+  shared_preferences: ^2.5.3
+  dart:convert: ^2.1.0
 
 dev_dependencies:
   flutter_test:

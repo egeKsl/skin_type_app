@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 // Aşağıdaki importlar kendi oluşturduğumuz dosyaları sayfaya dahil eder
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
+import 'package:skin_type_app/features/Data Service/data_service.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 
@@ -24,52 +25,59 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _isLoading = false;
 
   Future<void> _pickImageAndSend() async {
-    if (_isLoading) {
-      return;
+  if (_isLoading) {
+    return;
+  }
+
+  final picker = ImagePicker();
+  final image = await picker.pickImage(source: ImageSource.gallery);
+
+  if (image == null) {
+    return;
+  }
+
+  setState(() {
+    _selectedImage = File(image.path);
+    _resultText = ''; // UI’ya hiçbir şey yansıtma
+    _isLoading = true;
+  });
+
+  try {
+    final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
+    request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      final jsonBody = jsonDecode(responseBody);
+
+      // ☑ UI’ya yazmak YOK
+      // ☑ Sadece TERMINAL LOG
+      print("🔥 API Sonucu: ${jsonBody['result']}");
+
+      String cleanedJson = jsonBody['result']
+        .replaceAll('```json', '') // Başlangıç etiketini sil
+        .replaceAll('```', '')     // Bitiş etiketini sil
+        .trim();
+      final Map<String, dynamic> apiResponseData = json.decode(cleanedJson);
+      final storage = SkinAnalysisStorage();
+      await storage.saveAnalysisData(apiResponseData);
+
+    } else {
+      print("❌ API HATA: ${response.statusCode} | $responseBody");
     }
-
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image == null) {
-      return;
-    }
-
-    setState(() {
-      _selectedImage = File(image.path);
-      _resultText = '';
-      _isLoading = true;
-    });
-
-    try {
-      final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
-      request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      if (response.statusCode == 200) {
-        final jsonBody = jsonDecode(responseBody);
-        setState(() {
-          _resultText = jsonBody['result']?.toString() ?? 'Sonuç bulunamadı';
-        });
-      } else {
-        setState(() {
-          _resultText = 'Hata: ${response.statusCode}\n$responseBody';
-        });
-      }
-    } catch (error) {
+  } catch (error) {
+    print("❌ Hata oluştu: $error");
+  } finally {
+    if (mounted) {
       setState(() {
-        _resultText = 'Hata oluştu:\n$error';
+        _isLoading = false;
       });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
     }
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
