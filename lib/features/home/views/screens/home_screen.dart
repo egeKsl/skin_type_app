@@ -64,6 +64,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final storage = SkinAnalysisStorage();
       await storage.saveAnalysisData(apiResponseData);
 
+      final loadedData = await storage.loadAnalysisData();
+      if (loadedData != null) {
+  
+  // Artık loadedData'nın dolu olduğundan eminiz, güvenle kullanabiliriz
+        String ciltTipi = loadedData['cilt_tipi'] ?? "Bilinmiyor"; // ?? ile varsayılan değer de ekleyebilirsin
+        print("Yüklenen Cilt Tipi: $ciltTipi");
+
+        // Belirtiler listesi
+        List<String> belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
+        print("Belirtiler: $belirtiler");
+
+        // Rutinler
+        // Burada da iç içe verilerin null gelme ihtimaline karşı ? kullanmak güvenlidir
+        Map<String, dynamic> rutin = loadedData['rutin'] ?? {};
+        Map<String, dynamic> sabahRutini = rutin['sabah_rutini'] ?? {};
+        
+        String sabahTemizleyici = sabahRutini['nazik_jel_temizleyici'] ?? "Öneri Yok";
+        print("Sabah Temizleyici Önerisi: $sabahTemizleyici");
+
+      }else {
+        // Veri null geldiyse (yani henüz kaydedilmiş bir analiz yoksa) burası çalışır
+        print("Henüz kaydedilmiş analiz verisi bulunamadı.");
+      }
+
     } else {
       print("❌ API HATA: ${response.statusCode} | $responseBody");
     }
