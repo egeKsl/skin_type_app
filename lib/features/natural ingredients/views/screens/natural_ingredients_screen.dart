@@ -1,12 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
+import 'package:skin_type_app/core/database/data_service.dart'; // Storage servisini import et
 import '../widgets/ai_recommendation_card.dart';
 import '../widgets/ingredient_card.dart';
 import '../widgets/usage_tip_card.dart';
 
-class NaturalIngredientsScreen extends StatelessWidget {
+class NaturalIngredientsScreen extends StatefulWidget {
   const NaturalIngredientsScreen({super.key});
+
+  @override
+  State<NaturalIngredientsScreen> createState() => _NaturalIngredientsScreenState();
+}
+
+class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
+  // Veritabanından gelecek listeyi tutacak değişken
+  List<String> _dogalIcerikler = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  // Veritabanından veriyi çeken fonksiyon
+  Future<void> _loadData() async {
+    final storage = SkinAnalysisStorage();
+    final loadedData = await storage.loadAnalysisData();
+    
+    if (loadedData != null) {
+      print(loadedData['dogal_icerikler']);
+      if (mounted) {
+        setState(() {
+          _dogalIcerikler = List<String>.from(loadedData['dogal_icerikler'] ?? []);
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +54,6 @@ class NaturalIngredientsScreen extends StatelessWidget {
         child: Column(
           children: [
             // 1. ÜST HEADER ve GREEN BACKGROUND
-            // Yeşil arka planın üstüne beyaz kartı bindirmek için Stack kullanmıyoruz,
-            // bunun yerine Container içinde tasarım yapıyoruz.
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
@@ -35,7 +71,10 @@ class NaturalIngredientsScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.arrow_back, color: Colors.white),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.arrow_back, color: Colors.white),
+                        ),
                         const Text(
                           "Natural Ingredients",
                           style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
@@ -73,7 +112,7 @@ class NaturalIngredientsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 25),
 
-                    // AI Recommendation Kartı (Burada çağırıyoruz)
+                    // AI Recommendation Kartı
                     const AiRecommendationCard(),
                   ],
                 ),
@@ -95,25 +134,29 @@ class NaturalIngredientsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-                  // YATAY LİSTE (Ingredient Cards)
+                  // YATAY LİSTE (Ingredient Cards - DİNAMİK)
                   SizedBox(
-                    height: 650, // Kart uzun olduğu için yükseklik veriyoruz
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      clipBehavior: Clip.none, // Gölgelerin kesilmemesi için
-                      children: const [
-                        IngredientCard(
-                          title: "Aloe Vera",
-                          description: "Deep hydration...",
-                          matchPercentage: "95% Match",
-                        ),
-                        IngredientCard(
-                          title: "Chamomile",
-                          description: "Soothing effect...",
-                          matchPercentage: "92% Match",
-                        ),
-                      ],
-                    ),
+                    height: 650, 
+                    child: _isLoading 
+                        ? const Center(child: CircularProgressIndicator(color: AppColors.naturalGreen))
+                        : _dogalIcerikler.isEmpty
+                            ? const Center(child: Text("No data found."))
+                            : ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                clipBehavior: Clip.none,
+                                itemCount: _dogalIcerikler.length,
+                                itemBuilder: (context, index) {
+                                  final icerikAdi = _dogalIcerikler[index];
+                                  
+                                  return IngredientCard(
+                                    title: icerikAdi,
+                                    // API sadece isim verdiği için şimdilik standart açıklama giriyoruz
+                                    description: "Natural extract recommended based on your skin analysis.",
+                                    // Görsel amaçlı rastgele bir eşleşme oranı veriyoruz
+                                    matchPercentage: "9${5 - (index % 5)}% Match", 
+                                  );
+                                },
+                              ),
                   ),
 
                   const SizedBox(height: 30),
@@ -130,19 +173,19 @@ class NaturalIngredientsScreen extends StatelessWidget {
                   // İpuçları Listesi
                   const UsageTipCard(
                     icon: Icons.lightbulb,
-                    iconBgColor: Color(0xFFFFF9C4), // Açık sarı
+                    iconBgColor: Color(0xFFFFF9C4), 
                     title: "Patch Test First",
                     description: "Always test new natural ingredients on a small skin area before full application.",
                   ),
                   const UsageTipCard(
                     icon: Icons.access_time_filled,
-                    iconBgColor: Color(0xFFBBDEFB), // Açık mavi
+                    iconBgColor: Color(0xFFBBDEFB), 
                     title: "Gradual Introduction",
                     description: "Start with 2-3 times per week, then increase frequency as your skin adapts.",
                   ),
                   const UsageTipCard(
                     icon: Icons.verified,
-                    iconBgColor: Color(0xFFC8E6C9), // Açık yeşil
+                    iconBgColor: Color(0xFFC8E6C9), 
                     title: "Quality Matters",
                     description: "Choose organic, cold-pressed oils and extracts for maximum potency and benefits.",
                   ),
@@ -164,5 +207,5 @@ class NaturalIngredientsScreen extends StatelessWidget {
         Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkText)),
       ],
     );
-  }
+  } 
 }
