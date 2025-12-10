@@ -200,52 +200,42 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             height: 250,
             width: double.infinity,
             color: Colors.grey[100], // Resim Placeholder'ı
-            child: Center(
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  //  // Yüz görseli için
-                  ClipOval(
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.face, size: 80, color: Colors.grey),
-                    ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ClipOval(
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.face, size: 80, color: Colors.grey),
                   ),
-                  
-                  // Analiz Çubuğu ve Yazı
-                  Positioned(
-                    bottom: 20,
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.primaryPurple, width: 2),
-                          ),
-                          child: Row(
-                            children: const [
-                              SizedBox(
-                                width: 10,
-                                height: 10,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              SizedBox(width: 8),
-                              Text('Analyzing your skin!', style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.primaryPurple, width: 2),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      SizedBox(
+                        width: 10,
+                        height: 10,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
+                          strokeWidth: 2,
                         ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(width: 8),
+                      Text('Analyzing your skin!', style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 10),

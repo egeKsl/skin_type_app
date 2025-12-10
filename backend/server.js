@@ -77,13 +77,80 @@ app.post('/analyze-skin', upload.single('image'), async (req, res) => {
 
         const imagePart = fileToGenerativePart(imageBase64, mimeType);
         
-        const promptText = `You are a professional dermatologist.
-            Analyze the skin in this image.
-            Please respond in Turkish with this format:
-            - Cilt Tipi: [Kuru/Yağlı/Karma]
-            - Tespitler: [Gözlemlerin]
-            - Öneri: [Kısa tavsiye]
-            Note: Only provide text output, no markdown.`;
+        const promptText = `Sen profesyonel bir dermatologsun. 
+            Görevin, gönderilen yüz görüntüsünden cilt tipini analiz etmek ve aşağıdaki formatta TÜRKÇE olarak kesin bir JSON çıktısı oluşturmaktır.
+
+            ### KURALLAR
+            1. Yalnızca geçerli JSON üret. JSON dışında hiçbir açıklama, yorum, markdown, kod bloğu veya metin ekleme.
+            2. Cilt tipi sınıflandırması aşağıdaki seçeneklerden BİRİ olmalıdır:
+            - "YAĞLI / AKNEYE EĞİLİMLİ CİLT"
+            - "KURU CİLT"
+            - "KARMA CİLT"
+            - "HASSAS / ROSACEA EĞİLİMLİ CİLT"
+            - "LEKELİ / PİGMENTASYON SORUNLU CİLT"
+
+            3. Aşağıdaki başlıkları JSON içinde zorunlu olarak üret:
+            - "belirtiler"
+            - "ihtiyaclar"
+            - "dogal_icerikler"
+            - "kimyasal_aktif_icerikler"
+            - "makyaj_kullanilmasi_gerekenler"
+            - "makyaj_uzak_durulmasi_gerekenler"
+
+            4. Bu başlıklar mutlaka liste (array) formatında olmalıdır.
+
+            5. Ek olarak, “rutin” isimli bir alan oluştur ve bunun içine:
+            - "sabah_rutini"
+            - "aksam_rutini"
+            başlıklarını ekle.
+
+            6. Sabah rutini için model aşağıdaki adımlardan uygun olanları seçmeli ve her adım için kısa, içerik bazlı öneri yapmalıdır:
+            - "nazik_jel_temizleyici" (ör: “Salicylic Acid (0.5–1%)”)
+            - "tonik_gozenek_sikilastirici" (ör: “Niacinamide”)
+            - "serum" (ör: “Niacinamide 4–10% → yağ dengesi”)
+            - "hafif_nemlendirici" (ör: “Oil-free, jel form”)
+            - "gunes_kremi" (ör: “Mineral, zinc oxide/titanium dioxide”)
+
+            7. Akşam rutini için model aşağıdaki adımlardan uygun olanları seçmeli ve kısa, içerik bazlı öneri yapmalıdır:
+            - "cift_temizleme" (ör: “Yağ bazlı temizleyici ile başla”)
+            - "eksfoliasyon" (ör: “Salicylic Acid 2% (gün aşırı)”)  
+            - "tedavi_serumu" (ör: “Retinol 0.2–0.5%”)  
+            - "hafif_nemlendirici" (ör: “Non-comedogenic, yatıştırıcı”)
+            - "nokta_tedavisi" (ör: “Akne için benzoyl peroxide 2.5%”)  
+
+            8. Kullanılmaması gereken bir adım varsa, o adımı boş dizi olarak değil, hiç ekleme.
+
+            9. Cevap tamamen Türkçe olmalıdır.
+
+            ### ÇIKTI FORMAT ŞEMASI
+            {
+            "cilt_tipi": "string",
+            "belirtiler": ["..."],
+            "ihtiyaclar": ["..."],
+            "dogal_icerikler": ["..."],
+            "kimyasal_aktif_icerikler": ["..."],
+            "makyaj_kullanilmasi_gerekenler": ["..."],
+            "makyaj_uzak_durulmasi_gerekenler": ["..."],
+            "rutin": {
+                "sabah_rutini": {
+                "nazik_jel_temizleyici": "string",
+                "tonik_gozenek_sikilastirici": "string",
+                "serum": "string",
+                "hafif_nemlendirici": "string",
+                "gunes_kremi": "string"
+                },
+                "aksam_rutini": {
+                "cift_temizleme": "string",
+                "eksfoliasyon": "string",
+                "tedavi_serumu": "string",
+                "hafif_nemlendirici": "string",
+                "nokta_tedavisi": "string"
+                }
+            }
+            }
+
+            ### GÖREV
+            Gönderilen yüz görüntüsünü analiz et ve yukarıdaki JSON formatına %100 uygun bir çıktı üret.`;
         
         
             const contents = [
