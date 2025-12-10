@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 // Aşağıdaki importlar kendi oluşturduğumuz dosyaları sayfaya dahil eder
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
@@ -13,6 +18,59 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  final String _apiUrl = 'https://backend-server-skin-app--vertex-api-c4832.us-central1.hosted.app/analyze-skin';
+  File? _selectedImage;
+  String _resultText = '';
+  bool _isLoading = false;
+
+  Future<void> _pickImageAndSend() async {
+    if (_isLoading) {
+      return;
+    }
+
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedImage = File(image.path);
+      _resultText = '';
+      _isLoading = true;
+    });
+
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
+      request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(responseBody);
+        setState(() {
+          _resultText = jsonBody['result']?.toString() ?? 'Sonuç bulunamadı';
+        });
+      } else {
+        setState(() {
+          _resultText = 'Hata: ${response.statusCode}\n$responseBody';
+        });
+      }
+    } catch (error) {
+      setState(() {
+        _resultText = 'Hata oluştu:\n$error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -196,46 +254,63 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           const SizedBox(height: 20),
           
           // YÜZ GÖRSELİ Placeholder
-          Container(
-            height: 250,
-            width: double.infinity,
-            color: Colors.grey[100], // Resim Placeholder'ı
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ClipOval(
-                  child: Container(
-                    width: 150,
-                    height: 150,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.face, size: 80, color: Colors.grey),
+          GestureDetector(
+            onTap: _pickImageAndSend,
+            child: Container(
+              height: 250,
+              width: double.infinity,
+              color: Colors.grey[100], // Resim Placeholder'ı
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipOval(
+                    child: Container(
+                      width: 150,
+                      height: 150,
+                      color: Colors.grey[300],
+                      child: _selectedImage != null
+                          ? Image.file(
+                              _selectedImage!,
+                              fit: BoxFit.cover,
+                            )
+                          : const Icon(Icons.face, size: 80, color: Colors.grey),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.primaryPurple, width: 2),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      SizedBox(
-                        width: 10,
-                        height: 10,
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
-                          strokeWidth: 2,
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primaryPurple, width: 2),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_isLoading)
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        if (_isLoading) const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _isLoading
+                                ? 'Analiz ediliyor...'
+                                : (_resultText.isNotEmpty ? _resultText : 'Fotoğraf seçmek için dokun'),
+                            style: const TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      Text('Analyzing your skin!', style: TextStyle(color: AppColors.primaryPurple, fontWeight: FontWeight.bold)),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 10),
