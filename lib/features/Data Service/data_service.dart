@@ -33,4 +33,5 @@ class SkinAnalysisStorage {
     print("Kayıtlı analiz verisi bulunamadı.");
     return null;
   }
+  
 }
