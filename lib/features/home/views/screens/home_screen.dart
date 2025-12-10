@@ -22,6 +22,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String _resultText = '';
   bool _isLoading = false;
   List<String> _belirtiler = [];
+  List<String> _ihtiyaclar = [];
+  List<String> _kimyasalIcerikler = [];
+  String _cilt_tipi = '';
 
   @override
   void initState() {
@@ -36,6 +39,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (loadedData != null) {
       setState(() {
         _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
+        _ihtiyaclar = List<String>.from(loadedData['ihtiyaclar'] ?? []);
+        _cilt_tipi = loadedData['cilt_tipi'] ?? "Bilinmiyor";
+        _kimyasalIcerikler = List<String>.from(loadedData['kimyasal_aktif_icerikler'] ?? []);
       });
     }
   }
@@ -119,12 +125,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                   const SizedBox(height: 15),
 
-                  const InfoSectionCard(
-                    title: "Potential Risks",
+                  InfoSectionCard(
+                    title: "Needs",
                     count: "2",
                     color: Color(0xFFFFF3E0), // Açık turuncu
                     iconColor: Colors.orange,
-                    items: ["Early signs of sun damage", "Dehydration lines forming"],
+                    items: _ihtiyaclar.isEmpty
+                         ? ["Veri bekleniyor..."] 
+                        : _ihtiyaclar,
                   ),
                   const SizedBox(height: 15),
 
@@ -150,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Combination / Oily", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text(_cilt_tipi, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
@@ -176,25 +184,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   // Yatay Liste
                   SizedBox(
                     height: 350,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: const [
-                        ProductCard(
-                          title: "Salicylic Acid Serum 2%",
-                          subtitle: "Acne Treatment",
-                          tagColor: Colors.redAccent,
-                          tagText: "URGENT",
-                          desc: "Penetrates deep into pores to dissolve excess oil.",
-                        ),
-                        ProductCard(
-                          title: "Niacinamide 10%",
-                          subtitle: "Pore Minimizer",
-                          tagColor: Colors.orangeAccent,
-                          tagText: "HIGH",
-                          desc: "Regulates oil production and reduces pores.",
-                        ),
-                      ],
-                    ),
+                    child: _kimyasalIcerikler.isEmpty
+                        ? const Center(child: Text("Veri bekleniyor...")) // Liste boşsa bu çalışır
+                        : ListView.builder( // Liste doluysa burası çalışır
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _kimyasalIcerikler.length,
+                            itemBuilder: (context, index) {
+                              // Listedeki sıradaki içeriği al
+                              final icerikAdi = _kimyasalIcerikler[index];
+
+                              return ProductCard(
+                                title: icerikAdi, // API'den gelen isim (Örn: Salicylic Acid)
+                                subtitle: "Active Ingredient",
+                                tagColor: Colors.blueAccent,
+                                tagText: "RECOMMENDED",
+                                desc: "Based on your skin analysis, this ingredient is recommended.",
+                              );
+                            },
+                          ),
                   ),
 
                   const SizedBox(height: 30),
