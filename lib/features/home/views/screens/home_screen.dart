@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-// Aşağıdaki importlar kendi oluşturduğumuz dosyaları sayfaya dahil eder
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/features/Data Service/data_service.dart';
@@ -23,57 +21,77 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   File? _selectedImage;
   String _resultText = '';
   bool _isLoading = false;
+  List<String> _belirtiler = [];
 
-  Future<void> _pickImageAndSend() async {
-  if (_isLoading) {
-    return;
+  @override
+  void initState() {
+    super.initState();
+    _loadDatabase();
   }
 
-  final picker = ImagePicker();
-  final image = await picker.pickImage(source: ImageSource.gallery);
+  Future<void> _loadDatabase() async {
+    final storage = SkinAnalysisStorage();
+    final loadedData = await storage.loadAnalysisData();
 
-  if (image == null) {
-    return;
-  }
-
-  setState(() {
-    _selectedImage = File(image.path);
-    _resultText = '';
-    _isLoading = true;
-  });
-
-  try {
-    final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
-    request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
-
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
-
-    if (response.statusCode == 200) {
-      final jsonBody = jsonDecode(responseBody);
-
-      String cleanedJson = jsonBody['result']
-        .replaceAll('```json', '')
-        .replaceAll('```', '')
-        .trim();
-      final Map<String, dynamic> apiResponseData = json.decode(cleanedJson);
-      final storage = SkinAnalysisStorage();
-      await storage.saveAnalysisData(apiResponseData);
-
-    } else {
-      print("API HATA: ${response.statusCode} | $responseBody");
-    }
-  } catch (error) {
-    print("Hata oluştu: $error");
-  } finally {
-    if (mounted) {
+    if (loadedData != null) {
       setState(() {
-        _isLoading = false;
+        _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
       });
     }
   }
-}
 
+  Future<void> _pickImageAndSend() async {
+    if (_isLoading) {
+      return;
+    }
+
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedImage = File(image.path);
+      _resultText = '';
+      _isLoading = true;
+    });
+
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
+      request.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(responseBody);
+
+        String cleanedJson = jsonBody['result']
+            .replaceAll('```json', '')
+            .replaceAll('```', '')
+            .trim();
+        final Map<String, dynamic> apiResponseData = json.decode(cleanedJson);
+        final storage = SkinAnalysisStorage();
+        await storage.saveAnalysisData(apiResponseData);
+
+        // Veri kaydedildikten sonra ekrandaki belirtileri güncelle
+        await _loadDatabase(); 
+
+      } else {
+        print("API HATA: ${response.statusCode} | $responseBody");
+      }
+    } catch (error) {
+      print("Hata oluştu: $error");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,18 +106,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-                // ... (Ekranın kalan içeriği burada devam ediyor) ...
                 children: [
                   // 2. CURRENT ISSUES & RISKS (Widget Kullanımı)
-                  const InfoSectionCard(
+                  InfoSectionCard(
                     title: "Current Issues",
-                    count: "3",
-                    color: Color(0xFFFFEBEE), // Açık kırmızı
+                    count: _belirtiler.length.toString(), // Dinamik sayı
+                    color: const Color(0xFFFFEBEE), // Açık kırmızı
                     iconColor: Colors.red,
-                    items: ["Acne breakouts on T-zone", "Enlarged pores on cheeks", "Uneven skin texture"],
+                    items: _belirtiler.isEmpty 
+                        ? ["Veri bekleniyor..."] 
+                        : _belirtiler, // Dinamik liste
                   ),
                   const SizedBox(height: 15),
-                  
+
                   const InfoSectionCard(
                     title: "Potential Risks",
                     count: "2",
@@ -153,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ],
                   ),
                   const SizedBox(height: 15),
-                  
+
                   // Yatay Liste
                   SizedBox(
                     height: 350,
@@ -177,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 30),
 
                   // 5. START YOUR JOURNEY
@@ -214,8 +233,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
-
-  // --- YENİ EKLENEN/GÜNCELLENEN METOTLAR ---
 
   // Menü KAPALIYKEN görünen Yüz Tanıma Başlık ve Görsel Alanı
   Widget _buildCollapsedHeader() {
@@ -256,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // YÜZ GÖRSELİ Placeholder
           GestureDetector(
             onTap: _pickImageAndSend,
@@ -323,6 +340,4 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
-
-  // Önceden burada menü AÇIKKEN görünen liste vardı.
 }
