@@ -54,11 +54,17 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
         child: Column(
           children: [
             // 1. HEADER ALANI
+            // 1. HEADER ALANI (Mor Gradient Arka Plan)
             Container(
-              padding: const EdgeInsets.only(top: 50, bottom: 20, left: 16, right: 16),
+              padding: const EdgeInsets.only(
+                top: 50,
+                bottom: 20,
+                left: 16,
+                right: 16,
+              ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF9575CD), Color(0xFFB39DDB)],
+                  colors: [Color(0xFF9575CD), Color(0xFFB39DDB)], // Mor tonları
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -66,11 +72,23 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.arrow_back, color: Colors.white),
+                  // BURASI GÜNCELLENDİ: Sabit Icon yerine IconButton kullanıldı
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pop(context); // Bir önceki ekrana geri döner
+                    },
+                  ),
+
                   const Text(
                     "Weekly Routine",
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
+
                   GestureDetector(
                     onTap: () {
                       showTopMenuOverlay(context);
@@ -86,7 +104,10 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Your personalized skincare plan", style: TextStyle(color: Colors.grey)),
+                  const Text(
+                    "Your personalized skincare plan",
+                    style: TextStyle(color: Colors.grey),
+                  ),
                   const SizedBox(height: 20),
 
                   // 2. GÜN SEÇİCİ
@@ -95,9 +116,21 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: const [
-                        DaySelectorItem(day: "Mon", isSelected: false, hasDot: true),
-                        DaySelectorItem(day: "Tue", isSelected: false, hasDot: true),
-                        DaySelectorItem(day: "Wed", isSelected: true, hasDot: true),
+                        DaySelectorItem(
+                          day: "Mon",
+                          isSelected: false,
+                          hasDot: true,
+                        ),
+                        DaySelectorItem(
+                          day: "Tue",
+                          isSelected: false,
+                          hasDot: true,
+                        ),
+                        DaySelectorItem(
+                          day: "Wed",
+                          isSelected: true,
+                          hasDot: true,
+                        ),
                         DaySelectorItem(day: "Thu", isSelected: false),
                         DaySelectorItem(day: "Fri", isSelected: false),
                         DaySelectorItem(day: "Sat", isSelected: false),
@@ -113,7 +146,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                     headerIcon: Icons.wb_sunny_outlined,
                     headerIconColor: Colors.orange,
                     // Eğer yükleniyorsa loading göster, yoksa listeyi oluştur
-                    children: _isLoading 
+                    children: _isLoading
                         ? [const Center(child: CircularProgressIndicator())]
                         : _buildDynamicRoutineList(_sabahRutini),
                   ),
@@ -124,7 +157,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                     title: "PM Routine",
                     headerIcon: Icons.dark_mode_outlined,
                     headerIconColor: Colors.indigo,
-                    children: _isLoading 
+                    children: _isLoading
                         ? [const Center(child: CircularProgressIndicator())]
                         : _buildDynamicRoutineList(_aksamRutini),
                   ),
@@ -139,25 +172,40 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                     width: double.infinity,
                     height: 55,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFBA68C8)]),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF06292), Color(0xFFBA68C8)],
+                      ),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
-                        BoxShadow(color: const Color(0xFFF06292).withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))
-                      ]
+                        BoxShadow(
+                          color: const Color(0xFFF06292).withOpacity(0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
                           Icon(Icons.check_circle, color: Colors.white),
                           SizedBox(width: 10),
-                          Text("View Analyses", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text(
+                            "View Analyses",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -177,11 +225,16 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
   // JSON Anahtarlarını (örn: nazik_jel_temizleyici) Güzel Başlıklara ve İkonlara Çeviren Fonksiyon
   List<Widget> _buildDynamicRoutineList(Map<String, dynamic> routineData) {
     if (routineData.isEmpty) {
-      return [const Text("No routine data available yet.", style: TextStyle(color: Colors.grey))];
+      return [
+        const Text(
+          "No routine data available yet.",
+          style: TextStyle(color: Colors.grey),
+        ),
+      ];
     }
 
     return routineData.entries.map((entry) {
-      String key = entry.key;   // Örn: "nazik_jel_temizleyici"
+      String key = entry.key; // Örn: "nazik_jel_temizleyici"
       String value = entry.value.toString(); // Örn: "Salicylic Acid..."
 
       // Anahtara göre İkon, Renk ve Başlık Belirleme
@@ -220,7 +273,9 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
       } else {
         icon = Icons.star;
         color = Colors.grey;
-        title = _capitalize(key.replaceAll("_", " ")); // Bilinmeyen anahtarı düzelt
+        title = _capitalize(
+          key.replaceAll("_", " "),
+        ); // Bilinmeyen anahtarı düzelt
       }
 
       return RoutineStepTile(
@@ -236,7 +291,12 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
   // String ilk harf büyütme yardımcısı
   String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);
 
-  Widget _buildRoutineSection({required String title, required IconData headerIcon, required Color headerIconColor, required List<Widget> children}) {
+  Widget _buildRoutineSection({
+    required String title,
+    required IconData headerIcon,
+    required Color headerIconColor,
+    required List<Widget> children,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -244,7 +304,11 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, spreadRadius: 2),
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
         ],
       ),
       child: Column(
@@ -253,7 +317,13 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               Icon(headerIcon, color: headerIconColor),
             ],
           ),
