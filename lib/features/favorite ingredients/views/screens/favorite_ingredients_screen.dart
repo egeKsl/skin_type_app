@@ -6,7 +6,8 @@ class FavoriteIngredientsScreen extends StatefulWidget {
   const FavoriteIngredientsScreen({super.key});
 
   @override
-  State<FavoriteIngredientsScreen> createState() => _FavoriteIngredientsScreenState();
+  State<FavoriteIngredientsScreen> createState() =>
+      _FavoriteIngredientsScreenState();
 }
 
 class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
@@ -21,29 +22,46 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
         children: [
           // 1. HEADER (Mor Gradient)
           Container(
-            padding: const EdgeInsets.only(top: 50, bottom: 20, left: 16, right: 16),
+            width: double.infinity, // Genişliği tam kaplaması için
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF7B61FF), Color(0xFF9C27B0)], // Mor tonları
+                colors: [Color(0xFF7B61FF), Color(0xFF9C27B0)],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Icon(Icons.arrow_back, color: Colors.white),
-                const Text(
-                  "Favorite Ingredients",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            child: SafeArea(
+              // SafeArea ile çentik/saat alanından kaçınırız
+              bottom: false, // Alt kısmı etkilemesin
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 20.0,
                 ),
-                GestureDetector(
-                  onTap: () {
-                    showTopMenuOverlay(context);
-                  },
-                  child: const Icon(Icons.menu, color: Colors.white),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back, color: Colors.white),
+                    ),
+                    const Text(
+                      "Favorite Ingredients",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        showTopMenuOverlay(context);
+                      },
+                      child: const Icon(Icons.menu, color: Colors.white),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
 
@@ -86,7 +104,9 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
                   const SizedBox(height: 20),
 
                   // 4. LİSTE (Seçime göre değişir)
-                  _isChemicalSelected ? _buildChemicalList() : _buildNaturalList(),
+                  _isChemicalSelected
+                      ? _buildChemicalList()
+                      : _buildNaturalList(),
                 ],
               ),
             ),
@@ -111,10 +131,18 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF7B61FF) : Colors.transparent, // Aktifse Mor, değilse şeffaf
+            color: isActive
+                ? const Color(0xFF7B61FF)
+                : Colors.transparent, // Aktifse Mor, değilse şeffaf
             borderRadius: BorderRadius.circular(12),
             boxShadow: isActive
-                ? [BoxShadow(color: const Color(0xFF7B61FF).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))]
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF7B61FF).withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
                 : [],
           ),
           child: Text(
@@ -137,27 +165,36 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
       children: const [
         IngredientItemCard(
           title: "Niacinamide",
-          description: "Vitamin B3 derivative that brightens skin and reduces pore appearance",
+          description:
+              "Vitamin B3 derivative that brightens skin and reduces pore appearance",
           icon: Icons.science,
           iconColor: Color(0xFF9575CD), // Açık Mor
           tags: ["Brightening", "Hydration"],
-          tagColors: [Color(0xFFE3F2FD), Color(0xFFE8F5E9)], // Mavi, Yeşil tonları
+          tagColors: [
+            Color(0xFFE3F2FD),
+            Color(0xFFE8F5E9),
+          ], // Mavi, Yeşil tonları
           riskLevel: "Low Risk",
           riskColor: Colors.green,
         ),
         IngredientItemCard(
           title: "Retinol",
-          description: "Powerful anti-aging compound that promotes cell turnover",
+          description:
+              "Powerful anti-aging compound that promotes cell turnover",
           icon: Icons.settings, // Dişli ikonu (veya benzer bir şekil)
           iconColor: Color(0xFFFFD54F), // Sarı
           tags: ["Anti-aging", "Texture"],
-          tagColors: [Color(0xFFF3E5F5), Color(0xFFFFF3E0)], // Morumsu, Turuncumsu
+          tagColors: [
+            Color(0xFFF3E5F5),
+            Color(0xFFFFF3E0),
+          ], // Morumsu, Turuncumsu
           riskLevel: "Medium Risk",
           riskColor: Colors.orange,
         ),
         IngredientItemCard(
           title: "Hyaluronic Acid",
-          description: "Moisture-binding molecule that holds up to 1000x its weight in water",
+          description:
+              "Moisture-binding molecule that holds up to 1000x its weight in water",
           icon: Icons.water_drop,
           iconColor: Color(0xFF42A5F5), // Mavi
           tags: ["Hydration", "Plumping", "Sensitive-safe"],
@@ -167,7 +204,8 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
         ),
         IngredientItemCard(
           title: "Salicylic Acid",
-          description: "BHA exfoliant that penetrates pores to clear acne and blackheads",
+          description:
+              "BHA exfoliant that penetrates pores to clear acne and blackheads",
           icon: Icons.colorize, // Tüp ikonu
           iconColor: Color(0xFF2ECC71), // Yeşil
           tags: ["Acne", "Exfoliating"],
@@ -223,7 +261,7 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
           riskLevel: "Low Risk",
           riskColor: Colors.green,
         ),
-         IngredientItemCard(
+        IngredientItemCard(
           title: "Rosehip Oil",
           description: "Nutrient-rich oil that brightens and nourishes",
           icon: Icons.water_drop,
