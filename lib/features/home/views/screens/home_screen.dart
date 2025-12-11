@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen>
   List<String> _ihtiyaclar = [];
   List<String> _kimyasalIcerikler = [];
   String _cilt_tipi = '';
+  String _cilt_tipi_benzerlik_yuzdesi = '';
 
   @override
   void initState() {
@@ -43,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen>
         _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
         _ihtiyaclar = List<String>.from(loadedData['ihtiyaclar'] ?? []);
         _cilt_tipi = loadedData['cilt_tipi'] ?? "Bilinmiyor";
+        _cilt_tipi_benzerlik_yuzdesi =
+            loadedData['cilt_tipi_benzerlik_yuzdesi'] ?? "Bilinmiyor";
         _kimyasalIcerikler = List<String>.from(
           loadedData['kimyasal_aktif_icerikler'] ?? [],
         );
@@ -184,8 +187,8 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Text(
-                                "85% Match",
+                              child: Text(
+                                _cilt_tipi_benzerlik_yuzdesi,
                                 style: TextStyle(
                                   color: Colors.green,
                                   fontSize: 12,
