@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/database/data_service.dart';
+import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 
@@ -285,12 +286,21 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            // SAYFA GEÇİŞ KODU BURADA
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const WeeklyRoutineScreen(), // Hedef Ekran
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: AppColors.accentPurple,
                           ),
-                          child: const Text("Create My Routine"),
+                          child: const Text("See your individual routine!"),
                         ),
                       ],
                     ),
