@@ -351,7 +351,6 @@ class _HomeScreenState extends State<HomeScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.arrow_back, color: Colors.black),
                 const Text(
                   'Skin Analysis',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
