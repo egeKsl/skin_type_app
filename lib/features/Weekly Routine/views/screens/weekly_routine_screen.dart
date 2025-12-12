@@ -31,11 +31,14 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
     final storage = SkinAnalysisStorage();
     final loadedData = await storage.loadAnalysisData();
 
+    final savedTicks = await storage.loadRoutineStatus();
+
     if (loadedData != null && loadedData['rutin'] != null) {
       if (mounted) {
         setState(() {
           _sabahRutini = loadedData['rutin']['sabah_rutini'] ?? {};
           _aksamRutini = loadedData['rutin']['aksam_rutini'] ?? {};
+          _completedSteps.addAll(savedTicks);
           _isLoading = false;
         });
       }
@@ -286,11 +289,13 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
       bool isChecked = _completedSteps[key] ?? false;
 
       return GestureDetector(
-        onTap: () {
+        onTap: () async {
           setState(() {
             // Durumu tersine çevir (True <-> False)
             _completedSteps[key] = !isChecked;
           });
+          final storage = SkinAnalysisStorage();
+          await storage.saveRoutineStatus(_completedSteps);
         },
         child: RoutineStepTile(
           icon: icon,

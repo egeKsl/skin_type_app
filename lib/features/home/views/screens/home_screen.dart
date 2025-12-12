@@ -91,7 +91,8 @@ class _HomeScreenState extends State<HomeScreen>
         final Map<String, dynamic> apiResponseData = json.decode(cleanedJson);
         final storage = SkinAnalysisStorage();
         await storage.saveAnalysisData(apiResponseData);
-
+        //yeni kullanıcı kendi yüzünü tarattığı zaman rutin kısmındaki tik işaretleri silinmeli
+        await storage.deleteRoutineStatus();
         // Veri kaydedildikten sonra ekrandaki belirtileri güncelle
         await _loadDatabase();
       } else {
