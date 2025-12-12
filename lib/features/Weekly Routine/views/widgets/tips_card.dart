@@ -21,11 +21,23 @@ class TipsCard extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
-          _buildTipItem(Icons.lightbulb, Colors.pink.shade100, "Avoid exfoliating more than 2 times a week to prevent skin irritation"),
+          _buildTipItem(
+            Icons.lightbulb,
+            Colors.pink.shade100,
+            "Avoid exfoliating more than 2 times a week to prevent skin irritation",
+          ),
           const SizedBox(height: 15),
-          _buildTipItem(Icons.water_drop, Colors.blue.shade100, "Increase hydration on colder days to maintain skin moisture barrier"),
+          _buildTipItem(
+            Icons.water_drop,
+            const Color.fromARGB(255, 7, 10, 12),
+            "Increase hydration on colder days to maintain skin moisture barrier",
+          ),
           const SizedBox(height: 15),
-          _buildTipItem(Icons.nightlight_round, Colors.purple.shade100, "Apply retinol only at night and always follow with moisturizer"),
+          _buildTipItem(
+            Icons.nightlight_round,
+            Colors.purple.shade100,
+            "Apply retinol only at night and always follow with moisturizer",
+          ),
         ],
       ),
     );
@@ -44,7 +56,11 @@ class TipsCard extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.4),
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13,
+              height: 1.4,
+            ),
           ),
         ),
       ],

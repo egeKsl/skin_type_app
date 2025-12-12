@@ -16,6 +16,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
   // Verileri tutacak değişkenler
   Map<String, dynamic> _sabahRutini = {};
   Map<String, dynamic> _aksamRutini = {};
+  List<String> _kisisel_tavsiyeler = [];
   bool _isLoading = true;
 
   final Map<String, bool> _completedSteps = {};
@@ -39,6 +40,9 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
     if (loadedData != null && loadedData['rutin'] != null) {
       if (mounted) {
         setState(() {
+          _kisisel_tavsiyeler = List<String>.from(
+            loadedData['ihtiyaclar'] ?? [],
+          );
           _sabahRutini = loadedData['rutin']['sabah_rutini'] ?? {};
           _aksamRutini = loadedData['rutin']['aksam_rutini'] ?? {};
           _completedSteps.addAll(savedTicks);
@@ -214,7 +218,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                   const SizedBox(height: 25),
 
                   // 5. PERSONALIZED TIPS
-                  const TipsCard(),
+                  TipsCard(tips: _kisisel_tavsiyeler),
                   const SizedBox(height: 30),
 
                   // 6. ALT BUTON
