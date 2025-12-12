@@ -5,12 +5,14 @@ class DaySelectorItem extends StatelessWidget {
   final String day;
   final bool isSelected;
   final bool hasDot;
+  final Color dotColor;
 
   const DaySelectorItem({
     super.key,
     required this.day,
     required this.isSelected,
     this.hasDot = false,
+    this.dotColor = Colors.green,
   });
 
   @override
@@ -19,9 +21,11 @@ class DaySelectorItem extends StatelessWidget {
       width: 60,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFE1BEE7).withOpacity(0.3) : Colors.white,
+        color: isSelected
+            ? const Color(0xFFE1BEE7).withOpacity(0.3)
+            : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: isSelected 
+        border: isSelected
             ? Border.all(color: AppColors.primaryPurple, width: 2)
             : Border.all(color: Colors.grey.shade100),
         boxShadow: [
@@ -30,7 +34,7 @@ class DaySelectorItem extends StatelessWidget {
               color: Colors.grey.withOpacity(0.05),
               blurRadius: 5,
               spreadRadius: 1,
-            )
+            ),
         ],
       ),
       child: Column(
@@ -44,15 +48,17 @@ class DaySelectorItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          if (hasDot || isSelected)
+          // DÜZELTME BURADA YAPILDI
+          if (hasDot) // isSelected kontrolünü kaldırdım, nokta varsa rengini gösterelim
             Container(
               width: 6,
               height: 6,
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryPurple : Colors.green.shade300,
+                // ARTIK HESAPLANAN RENGİ KULLANIYORUZ:
+                color: dotColor,
                 shape: BoxShape.circle,
               ),
-            )
+            ),
         ],
       ),
     );

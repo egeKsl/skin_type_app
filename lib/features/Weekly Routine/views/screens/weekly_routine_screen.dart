@@ -20,6 +20,10 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
 
   final Map<String, bool> _completedSteps = {};
 
+  // YENİ: Seçili günü ve günlerin listesini tutuyoruz
+  String _selectedDay = "Mon";
+  final List<String> _days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
   @override
   void initState() {
     super.initState();
@@ -30,7 +34,6 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
   Future<void> _loadRoutineData() async {
     final storage = SkinAnalysisStorage();
     final loadedData = await storage.loadAnalysisData();
-
     final savedTicks = await storage.loadRoutineStatus();
 
     if (loadedData != null && loadedData['rutin'] != null) {
@@ -51,6 +54,51 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
     }
   }
 
+  // YENİ: O gün için nokta rengini hesaplayan fonksiyon
+  // YENİ VE DÜZELTİLMİŞ: O gün için nokta rengini hesaplayan fonksiyon
+  Color _getDayDotColor(String day) {
+    if (_isLoading) return Colors.transparent;
+
+    // 1. O gün için toplam yapılması gereken adım sayısı
+    // Sabah ve akşam rutinlerindeki toplam madde sayısı
+    int totalSteps = _sabahRutini.length + _aksamRutini.length;
+
+    // Eğer o gün hiç rutin yoksa nokta gösterme
+    if (totalSteps == 0) return Colors.transparent;
+
+    // 2. O gün için tamamlanmış (tiklenmiş) adım sayısı
+    int completedCount = 1;
+
+    // Sadece VERİTABANINDAKİ (yani o anki listedeki) anahtarları kontrol etmeliyiz.
+    // Çünkü _completedSteps içinde eski veya silinmiş anahtarlar kalmış olabilir.
+
+    // Sabah rutinini kontrol et
+    _sabahRutini.forEach((key, _) {
+      String uniqueKey = "${day}_$key"; // Örn: Mon_nazik_jel_temizleyici
+      if (_completedSteps[uniqueKey] == true) {
+        completedCount++;
+      }
+    });
+
+    // Akşam rutinini kontrol et
+    _aksamRutini.forEach((key, _) {
+      String uniqueKey = "${day}_$key";
+      if (_completedSteps[uniqueKey] == true) {
+        completedCount++;
+      }
+    });
+
+    // 3. Renk Mantığı
+    if (completedCount >= totalSteps) {
+      // Eşit veya büyükse (garanti olsun diye >=)
+      return Colors.green; // Hepsi tamamlandıysa Yeşil
+    } else if (completedCount > 0) {
+      return Colors.amber; // 1'den fazla (veya en az 1) ise Sarı
+    } else {
+      return Colors.red; // Hiç yapılmadıysa Kırmızı
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,7 +107,6 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
         child: Column(
           children: [
             // 1. HEADER ALANI
-            // 1. HEADER ALANI (Mor Gradient Arka Plan)
             Container(
               padding: const EdgeInsets.only(
                 top: 50,
@@ -69,7 +116,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
               ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF9575CD), Color(0xFFB39DDB)], // Mor tonları
+                  colors: [Color(0xFF9575CD), Color(0xFFB39DDB)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -77,14 +124,12 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // BURASI GÜNCELLENDİ: Sabit Icon yerine IconButton kullanıldı
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () {
-                      Navigator.pop(context); // Bir önceki ekrana geri döner
+                      Navigator.pop(context);
                     },
                   ),
-
                   const Text(
                     "Weekly Routine",
                     style: TextStyle(
@@ -93,7 +138,6 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   GestureDetector(
                     onTap: () {
                       showTopMenuOverlay(context);
@@ -115,49 +159,50 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 2. GÜN SEÇİCİ
+                  // 2. GÜN SEÇİCİ (GÜNCELLENDİ: ListView.builder ile dinamik yapıldı)
                   SizedBox(
                     height: 80,
-                    child: ListView(
+                    child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      children: const [
-                        DaySelectorItem(
-                          day: "Mon",
-                          isSelected: false,
-                          hasDot: true,
-                        ),
-                        DaySelectorItem(
-                          day: "Tue",
-                          isSelected: false,
-                          hasDot: true,
-                        ),
-                        DaySelectorItem(
-                          day: "Wed",
-                          isSelected: true,
-                          hasDot: true,
-                        ),
-                        DaySelectorItem(day: "Thu", isSelected: false),
-                        DaySelectorItem(day: "Fri", isSelected: false),
-                        DaySelectorItem(day: "Sat", isSelected: false),
-                        DaySelectorItem(day: "Sun", isSelected: false),
-                      ],
+                      itemCount: _days.length,
+                      itemBuilder: (context, index) {
+                        final day = _days[index];
+                        final isSelected = day == _selectedDay;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedDay = day; // Günü seç
+                            });
+                          },
+                          // Not: DaySelectorItem widget'ına 'dotColor' parametresi eklemeniz gerekebilir
+                          // Eğer ekleyemezseniz hasDot mantığını burada container ile çözebilirsiniz.
+                          child: DaySelectorItem(
+                            day: day,
+                            isSelected: isSelected,
+                            hasDot: true, // Nokta her zaman var
+                            dotColor: _getDayDotColor(
+                              day,
+                            ), // Rengi fonksiyondan alıyor
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 25),
 
-                  // 3. AM ROUTINE KARTI (DİNAMİK)
+                  // 3. AM ROUTINE KARTI
                   _buildRoutineSection(
                     title: "AM Routine",
                     headerIcon: Icons.wb_sunny_outlined,
                     headerIconColor: Colors.orange,
-                    // Eğer yükleniyorsa loading göster, yoksa listeyi oluştur
                     children: _isLoading
                         ? [const Center(child: CircularProgressIndicator())]
                         : _buildDynamicRoutineList(_sabahRutini),
                   ),
                   const SizedBox(height: 25),
 
-                  // 4. PM ROUTINE KARTI (DİNAMİK)
+                  // 4. PM ROUTINE KARTI
                   _buildRoutineSection(
                     title: "PM Routine",
                     headerIcon: Icons.dark_mode_outlined,
@@ -227,8 +272,6 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
 
   // --- YARDIMCI METOTLAR ---
 
-  // JSON Anahtarlarını (örn: nazik_jel_temizleyici) Güzel Başlıklara ve İkonlara Çeviren Fonksiyon
-  // JSON Anahtarlarını (örn: nazik_jel_temizleyici) Güzel Başlıklara ve İkonlara Çeviren Fonksiyon
   List<Widget> _buildDynamicRoutineList(Map<String, dynamic> routineData) {
     if (routineData.isEmpty) {
       return [
@@ -240,59 +283,59 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
     }
 
     return routineData.entries.map((entry) {
-      String key = entry.key; // Örn: "nazik_jel_temizleyici"
-      String value = entry.value.toString(); // Örn: "Salicylic Acid..."
+      String rawKey = entry.key; // Örn: "nazik_jel_temizleyici"
+      String value = entry.value.toString();
 
-      // --- İkon ve Renk Seçimi (Eski kodunuzla aynı) ---
+      // YENİ: Anahtarı gün ile birleştiriyoruz (Örn: "Mon_nazik_jel_temizleyici")
+      String uniqueKey = "${_selectedDay}_$rawKey";
+
+      // --- İkon ve Renk Seçimi (Aynı kaldı) ---
       IconData icon;
       Color color;
       String title;
 
-      if (key.contains("temizle")) {
+      if (rawKey.contains("temizle")) {
         icon = Icons.water_drop;
         color = Colors.blue;
         title = "Cleanser";
-      } else if (key.contains("tonik")) {
+      } else if (rawKey.contains("tonik")) {
         icon = Icons.science;
         color = Colors.amber;
         title = "Toner";
-      } else if (key.contains("serum")) {
+      } else if (rawKey.contains("serum")) {
         icon = Icons.colorize;
         color = Colors.deepPurpleAccent;
         title = "Serum";
-      } else if (key.contains("nem")) {
+      } else if (rawKey.contains("nem")) {
         icon = Icons.local_florist;
         color = Colors.green;
         title = "Moisturizer";
-      } else if (key.contains("gunes")) {
+      } else if (rawKey.contains("gunes")) {
         icon = Icons.shield;
         color = Colors.orangeAccent;
         title = "SPF";
-      } else if (key.contains("eksfoliasyon")) {
+      } else if (rawKey.contains("eksfoliasyon")) {
         icon = Icons.autorenew;
         color = Colors.pinkAccent;
         title = "Exfoliator";
-      } else if (key.contains("nokta")) {
+      } else if (rawKey.contains("nokta")) {
         icon = Icons.add_circle_outline;
         color = Colors.redAccent;
         title = "Spot Treatment";
       } else {
         icon = Icons.star;
         color = Colors.grey;
-        title = _capitalize(key.replaceAll("_", " "));
+        title = _capitalize(rawKey.replaceAll("_", " "));
       }
       // ----------------------------------------------------
 
-      // YENİ EKLENEN KISIM: Tıklama Mantığı
-
-      // Bu adımın tamamlanıp tamamlanmadığını kontrol et
-      bool isChecked = _completedSteps[key] ?? false;
+      // YENİ: Bu güne özel tik durumunu kontrol et
+      bool isChecked = _completedSteps[uniqueKey] ?? false;
 
       return GestureDetector(
         onTap: () async {
           setState(() {
-            // Durumu tersine çevir (True <-> False)
-            _completedSteps[key] = !isChecked;
+            _completedSteps[uniqueKey] = !isChecked;
           });
           final storage = SkinAnalysisStorage();
           await storage.saveRoutineStatus(_completedSteps);
@@ -302,15 +345,14 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
           iconColor: color,
           title: title,
           subtitle: value,
-          // Buraya dinamik durumu veriyoruz
           isCompleted: isChecked,
         ),
       );
     }).toList();
   }
 
-  // String ilk harf büyütme yardımcısı
-  String _capitalize(String s) => s[0].toUpperCase() + s.substring(1);
+  String _capitalize(String s) =>
+      s.isEmpty ? "" : s[0].toUpperCase() + s.substring(1);
 
   Widget _buildRoutineSection({
     required String title,
