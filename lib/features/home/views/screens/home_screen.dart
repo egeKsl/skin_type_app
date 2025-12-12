@@ -40,18 +40,37 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadDatabase() async {
     final storage = SkinAnalysisStorage();
     final loadedData = await storage.loadAnalysisData();
+    String? savedImagePath = await storage.loadFaceImagePath();
+
+    // 📌 KAYITLI RESİM YOLUNU YÜKLE
+    if (savedImagePath != null) {
+      File imageFile = File(savedImagePath);
+      bool fileExists = await imageFile.exists();
+
+      if (fileExists && mounted) {
+        setState(() {
+          _selectedImage = imageFile;
+        });
+        print("✅ Kayıtlı resim yüklendi: $savedImagePath");
+      } else {
+        print("⚠️ Resim dosyası bulunamadı, kayıt temizleniyor");
+        await storage.saveFaceImagePath(null);
+      }
+    }
 
     if (loadedData != null) {
-      setState(() {
-        _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
-        _ihtiyaclar = List<String>.from(loadedData['ihtiyaclar'] ?? []);
-        _cilt_tipi = loadedData['cilt_tipi'] ?? "Bilinmiyor";
-        _cilt_tipi_benzerlik_yuzdesi =
-            loadedData['cilt_tipi_benzerlik_yuzdesi'] ?? "Bilinmiyor";
-        _kimyasalIcerikler = List<String>.from(
-          loadedData['kimyasal_aktif_icerikler'] ?? [],
-        );
-      });
+      if (mounted) {
+        setState(() {
+          _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
+          _ihtiyaclar = List<String>.from(loadedData['ihtiyaclar'] ?? []);
+          _cilt_tipi = loadedData['cilt_tipi'] ?? "Bilinmiyor";
+          _cilt_tipi_benzerlik_yuzdesi =
+              loadedData['cilt_tipi_benzerlik_yuzdesi'] ?? "Bilinmiyor";
+          _kimyasalIcerikler = List<String>.from(
+            loadedData['kimyasal_aktif_icerikler'] ?? [],
+          );
+        });
+      }
     }
   }
 
@@ -84,17 +103,23 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (response.statusCode == 200) {
         final jsonBody = jsonDecode(responseBody);
-
         String cleanedJson = jsonBody['result']
             .replaceAll('```json', '')
             .replaceAll('```', '')
             .trim();
         final Map<String, dynamic> apiResponseData = json.decode(cleanedJson);
         final storage = SkinAnalysisStorage();
+
+        // 1. Analiz verisini kaydet
         await storage.saveAnalysisData(apiResponseData);
-        //yeni kullanıcı kendi yüzünü tarattığı zaman rutin kısmındaki tik işaretleri silinmeli
+
+        // 2. Routine status'u sil
         await storage.deleteRoutineStatus();
-        // Veri kaydedildikten sonra ekrandaki belirtileri güncelle
+
+        // 📌 3. RESİM YOLUNU KAYDET
+        await storage.saveFaceImagePath(image.path);
+
+        // 4. Veri kaydedildikten sonra ekrandaki belirtileri güncelle
         await _loadDatabase();
       } else {
         print("API HATA: ${response.statusCode} | $responseBody");
