@@ -18,6 +18,8 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
   Map<String, dynamic> _aksamRutini = {};
   bool _isLoading = true;
 
+  final Map<String, bool> _completedSteps = {};
+
   @override
   void initState() {
     super.initState();
@@ -223,6 +225,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
   // --- YARDIMCI METOTLAR ---
 
   // JSON Anahtarlarını (örn: nazik_jel_temizleyici) Güzel Başlıklara ve İkonlara Çeviren Fonksiyon
+  // JSON Anahtarlarını (örn: nazik_jel_temizleyici) Güzel Başlıklara ve İkonlara Çeviren Fonksiyon
   List<Widget> _buildDynamicRoutineList(Map<String, dynamic> routineData) {
     if (routineData.isEmpty) {
       return [
@@ -237,7 +240,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
       String key = entry.key; // Örn: "nazik_jel_temizleyici"
       String value = entry.value.toString(); // Örn: "Salicylic Acid..."
 
-      // Anahtara göre İkon, Renk ve Başlık Belirleme
+      // --- İkon ve Renk Seçimi (Eski kodunuzla aynı) ---
       IconData icon;
       Color color;
       String title;
@@ -273,17 +276,30 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
       } else {
         icon = Icons.star;
         color = Colors.grey;
-        title = _capitalize(
-          key.replaceAll("_", " "),
-        ); // Bilinmeyen anahtarı düzelt
+        title = _capitalize(key.replaceAll("_", " "));
       }
+      // ----------------------------------------------------
 
-      return RoutineStepTile(
-        icon: icon,
-        iconColor: color,
-        title: title,
-        subtitle: value,
-        isCompleted: false, // Varsayılan olarak yapılmadı
+      // YENİ EKLENEN KISIM: Tıklama Mantığı
+
+      // Bu adımın tamamlanıp tamamlanmadığını kontrol et
+      bool isChecked = _completedSteps[key] ?? false;
+
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            // Durumu tersine çevir (True <-> False)
+            _completedSteps[key] = !isChecked;
+          });
+        },
+        child: RoutineStepTile(
+          icon: icon,
+          iconColor: color,
+          title: title,
+          subtitle: value,
+          // Buraya dinamik durumu veriyoruz
+          isCompleted: isChecked,
+        ),
       );
     }).toList();
   }
