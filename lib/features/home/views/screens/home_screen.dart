@@ -7,6 +7,7 @@ import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/database/data_service.dart';
 import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
+import 'package:skin_type_app/features/natural%20ingredients/views/screens/natural_ingredients_screen.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 
@@ -207,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen>
                   // 4. RECOMMENDED FOR YOU
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
                         "Recommended For You",
                         style: TextStyle(
@@ -215,11 +216,22 @@ class _HomeScreenState extends State<HomeScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
-                        "See All",
-                        style: TextStyle(
-                          color: AppColors.primaryPurple,
-                          fontWeight: FontWeight.bold,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const NaturalIngredientsScreen(), // Hedef Ekran
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "See All",
+                          style: TextStyle(
+                            color: AppColors.primaryPurple,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],

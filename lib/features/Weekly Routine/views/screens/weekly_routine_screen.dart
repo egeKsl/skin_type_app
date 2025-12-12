@@ -71,7 +71,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
     if (totalSteps == 0) return Colors.transparent;
 
     // 2. O gün için tamamlanmış (tiklenmiş) adım sayısı
-    int completedCount = 1;
+    int completedCount = 0;
 
     // Sadece VERİTABANINDAKİ (yani o anki listedeki) anahtarları kontrol etmeliyiz.
     // Çünkü _completedSteps içinde eski veya silinmiş anahtarlar kalmış olabilir.
@@ -218,7 +218,7 @@ class _WeeklyRoutineScreenState extends State<WeeklyRoutineScreen> {
                   const SizedBox(height: 25),
 
                   // 5. PERSONALIZED TIPS
-                  TipsCard(tips: _kisisel_tavsiyeler),
+                  TipsCard(),
                   const SizedBox(height: 30),
 
                   // 6. ALT BUTON
