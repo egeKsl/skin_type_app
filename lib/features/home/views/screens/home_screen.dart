@@ -7,8 +7,10 @@ import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/database/data_service.dart';
 import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
+import 'package:skin_type_app/features/face scan/views/screens/face_scan_screen.dart';
 import 'package:skin_type_app/features/natural%20ingredients/views/screens/natural_ingredients_screen.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
+import 'package:camera/camera.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 
@@ -80,15 +82,39 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
+    // 1. ÖNCE KAMERALARI BUL
+    String? imagePath;
+    try {
+      final cameras = await availableCameras();
 
-    if (image == null) {
+      // Ön kamerayı bul (Genelde yüz analizi için ön kamera kullanılır)
+      final frontCamera = cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first, // Ön kamera yoksa ilkini al
+      );
+
+      // 2. ÖZEL KAMERA EKRANINA GİT VE SONUCU BEKLE
+      if (!mounted) return;
+      imagePath = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FaceScanScreen(camera: frontCamera),
+        ),
+      );
+    } catch (e) {
+      print("Kamera hatası: $e");
+      return; // Kamera açılmazsa işlemi durdur
+    }
+
+    // Eğer kullanıcı geri tuşuna basıp fotoğraf çekmeden döndüyse işlem yapma
+    if (imagePath == null) {
       return;
     }
 
     setState(() {
-      _selectedImage = File(image.path);
+      _selectedImage = File(
+        imagePath!,
+      ); // ImagePicker yerine gelen path'i kullanıyoruz
       _resultText = '';
       _isLoading = true;
     });
@@ -114,18 +140,18 @@ class _HomeScreenState extends State<HomeScreen>
         // 1. Analiz verisini kaydet
         await storage.saveAnalysisData(apiResponseData);
 
-        //firestore a kayıt yap
+        // firestore a kayıt yap
         final scanService = ScanService();
         await scanService.saveScan(
           apiResponse: apiResponseData,
-          imagePath: image.path,
+          imagePath: _selectedImage!.path, // Güncel path
         );
 
         // 2. Routine status'u sil
         await storage.deleteRoutineStatus();
 
         // 📌 3. RESİM YOLUNU KAYDET
-        await storage.saveFaceImagePath(image.path);
+        await storage.saveFaceImagePath(_selectedImage!.path);
 
         // 4. Veri kaydedildikten sonra ekrandaki belirtileri güncelle
         await _loadDatabase();
