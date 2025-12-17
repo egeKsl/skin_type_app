@@ -1,5 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // Tarih formatı için (pubspec.yaml'a intl ekleyin)
+
 class ScanResult {
-  final String date; // Tarama tarihi
+  final String id; // Belge ID'si
+  final String date;
   final String ciltTipi;
   final String benzerlikYuzdesi;
   final List<String> belirtiler;
@@ -10,6 +14,7 @@ class ScanResult {
   final List<String> makyajUzakDurulacaklar;
 
   ScanResult({
+    this.id = '',
     required this.date,
     required this.ciltTipi,
     required this.benzerlikYuzdesi,
@@ -21,23 +26,39 @@ class ScanResult {
     required this.makyajUzakDurulacaklar,
   });
 
-  // JSON'dan nesne oluşturma (Simülasyon için)
-  factory ScanResult.fromJson(Map<String, dynamic> json) {
+  // Firestore'dan gelen veriyi modele çeviren factory
+  factory ScanResult.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+    // Veriler 'raw_ai_output' içinde kayıtlı olduğu için oraya bakıyoruz
+    Map<String, dynamic> aiData = data['raw_ai_output'] ?? {};
+
+    // Tarih Formatlama (Timestamp -> String)
+    String dateStr = "Unknown Date";
+    if (data['created_at'] != null) {
+      Timestamp timestamp = data['created_at'];
+      DateTime dateTime = timestamp.toDate();
+      dateStr = DateFormat(
+        'dd MMM yyyy, HH:mm',
+      ).format(dateTime); // Örn: 12 Dec 2025, 14:30
+    }
+
     return ScanResult(
-      date: json['date'] ?? DateTime.now().toString().split(' ')[0],
-      ciltTipi: json['cilt_tipi'] ?? '',
-      benzerlikYuzdesi: json['cilt_tipi_benzerlik_yuzdesi'] ?? '',
-      belirtiler: List<String>.from(json['belirtiler'] ?? []),
-      ihtiyaclar: List<String>.from(json['ihtiyaclar'] ?? []),
-      dogalIcerikler: List<String>.from(json['dogal_icerikler'] ?? []),
+      id: doc.id,
+      date: dateStr,
+      ciltTipi: aiData['cilt_tipi'] ?? 'Bilinmiyor',
+      benzerlikYuzdesi: aiData['cilt_tipi_benzerlik_yuzdesi'] ?? '',
+      belirtiler: List<String>.from(aiData['belirtiler'] ?? []),
+      ihtiyaclar: List<String>.from(aiData['ihtiyaclar'] ?? []),
+      dogalIcerikler: List<String>.from(aiData['dogal_icerikler'] ?? []),
       kimyasalIcerikler: List<String>.from(
-        json['kimyasal_aktif_icerikler'] ?? [],
+        aiData['kimyasal_aktif_icerikler'] ?? [],
       ),
       makyajOnerileri: List<String>.from(
-        json['makyaj_kullanilmasi_gerekenler'] ?? [],
+        aiData['makyaj_kullanilmasi_gerekenler'] ?? [],
       ),
       makyajUzakDurulacaklar: List<String>.from(
-        json['makyaj_uzak_durulmasi_gerekenler'] ?? [],
+        aiData['makyaj_uzak_durulmasi_gerekenler'] ?? [],
       ),
     );
   }

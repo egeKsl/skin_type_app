@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:skin_type_app/features/scan details/views/screens/scan_detail_screen.dart'; // Detay ekranını import et
+import 'package:skin_type_app/core/services/scan_service.dart'; // Service import
+import 'package:skin_type_app/features/scan%20details/views/screens/scan_detail_screen.dart';
 import 'package:skin_type_app/models/scan_model.dart';
 
 class ScanHistoryScreen extends StatelessWidget {
@@ -7,41 +8,13 @@ class ScanHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Örnek (Mock) Veriler - Normalde veritabanından gelecek
-    final List<ScanResult> historyData = [
-      ScanResult(
-        date: "Today, 14:30",
-        ciltTipi: "KARMA CİLT",
-        benzerlikYuzdesi: "%87",
-        belirtiler: [
-          "T bölgesinde yağlanma",
-          "Yanaklarda kuruluk",
-          "Hafif gözenek belirginliği",
-        ],
-        ihtiyaclar: ["Dengeleyici nemlendirici", "Salisilik asit temizleyici"],
-        dogalIcerikler: ["Yeşil Çay", "Aloe Vera"],
-        kimyasalIcerikler: ["Niacinamide", "Hyaluronic Acid"],
-        makyajOnerileri: ["Su bazlı fondöten", "Mineral pudra"],
-        makyajUzakDurulacaklar: ["Ağır yağ bazlı ürünler"],
-      ),
-      ScanResult(
-        date: "Yesterday",
-        ciltTipi: "YAĞLI / AKNEYE EĞİLİMLİ CİLT",
-        benzerlikYuzdesi: "%92",
-        belirtiler: ["Aktif akne", "Parlama"],
-        ihtiyaclar: [],
-        dogalIcerikler: [],
-        kimyasalIcerikler: [],
-        makyajOnerileri: [],
-        makyajUzakDurulacaklar: [],
-      ),
-    ];
+    final ScanService _scanService = ScanService();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Açık gri/mavi arka plan
+      backgroundColor: const Color(0xFFF5F7FA),
       body: Column(
         children: [
-          // 1. Header (Profil ekranına benzer Mavi-Gri Gradient)
+          // 1. Header
           Container(
             padding: const EdgeInsets.only(
               top: 50,
@@ -51,10 +24,7 @@ class ScanHistoryScreen extends StatelessWidget {
             ),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF6B7C97),
-                  Color(0xFF8697B0),
-                ], // Mavi-Gri tonları
+                colors: [Color(0xFF6B7C97), Color(0xFF8697B0)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -78,14 +48,46 @@ class ScanHistoryScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. Liste
+          // 2. Dinamik Liste (StreamBuilder)
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: historyData.length,
-              itemBuilder: (context, index) {
-                final scan = historyData[index];
-                return _buildHistoryCard(context, scan);
+            child: StreamBuilder<List<ScanResult>>(
+              stream: _scanService.getScans(),
+              builder: (context, snapshot) {
+                // Hata Durumu
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text("Bir hata oluştu: ${snapshot.error}"),
+                  );
+                }
+
+                // Yükleniyor Durumu
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6B7C97)),
+                  );
+                }
+
+                final historyData = snapshot.data ?? [];
+
+                // Veri Yoksa
+                if (historyData.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "Henüz hiç tarama yapılmamış.",
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                    ),
+                  );
+                }
+
+                // Liste Varsa
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: historyData.length,
+                  itemBuilder: (context, index) {
+                    final scan = historyData[index];
+                    return _buildHistoryCard(context, scan);
+                  },
+                );
               },
             ),
           ),
@@ -97,7 +99,7 @@ class ScanHistoryScreen extends StatelessWidget {
   Widget _buildHistoryCard(BuildContext context, ScanResult scan) {
     return GestureDetector(
       onTap: () {
-        // Detay Ekranına Git
+        // Tıklanan taramanın verilerini detay ekranına gönderiyoruz
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -121,12 +123,12 @@ class ScanHistoryScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Kamera İkonu (Kare Kutu İçinde)
+            // Kamera İkonu
             Container(
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F4F8), // Çok açık mavi gri
+                color: const Color(0xFFF0F4F8),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -157,14 +159,14 @@ class ScanHistoryScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Score / Yüzde Chip
+                  // Yüzde Chip
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD), // Açık Mavi
+                      color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -180,7 +182,6 @@ class ScanHistoryScreen extends StatelessWidget {
               ),
             ),
 
-            // Sağ Ok
             const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           ],
         ),
