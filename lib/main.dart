@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'features/home/views/screens/home_screen.dart';
+//import 'features/home/views/screens/home_screen.dart';
+import 'features/profile information/views/screens/personal_info_screen.dart';
 import 'constants/app_colors.dart';
 
 void main() {
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const PersonalInfoScreen(),
     );
   }
 }
