@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      initialRoute: '/auth',
+      initialRoute: '/home',
 
       routes: {
         '/auth': (context) => const AuthScreen(),

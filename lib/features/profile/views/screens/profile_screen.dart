@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
+import 'package:skin_type_app/features/scan history/views/screens/scan_history_screen.dart';
 // Yeni oluşturduğumuz widget'ları buraya çağırıyoruz:
 import '../widgets/stat_card.dart';
 import '../widgets/section_header.dart';
@@ -72,16 +73,28 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  SectionHeader(
+                children: [
+                  const SectionHeader(
                     title: "Scan History",
                     padding: EdgeInsets.zero,
                   ),
-                  Text(
-                    "View All",
-                    style: TextStyle(
-                      color: Color(0xFF6B7C97),
-                      fontWeight: FontWeight.bold,
+                  // 📌 TIKLANABİLIR "View All" TEXT'İ
+                  GestureDetector(
+                    onTap: () {
+                      // 📌 Scan History ekranına git
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ScanHistoryScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "View All",
+                      style: TextStyle(
+                        color: Color(0xFF6B7C97),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
