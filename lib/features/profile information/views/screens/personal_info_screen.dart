@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/constants/profile_colors.dart';
-import '../widgets/personal_info_widgets.dart'; // Oluşturduğumuz widget dosyasını çağırıyoruz
+import 'package:skin_type_app/core/database/data_service.dart'; // Veritabanı servisi eklendi
+import '../widgets/personal_info_widgets.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -10,17 +11,97 @@ class PersonalInfoScreen extends StatefulWidget {
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
-  // State Değişkenleri
-  String _selectedGender = "Female";
-  String _selectedSkinType = "Combination";
+  // --- State Değişkenleri ---
 
-  final Map<String, bool> _skinConcerns = {
-    "Acne & Breakouts": true,
-    "Redness & Irritation": false,
-    "Pigmentation & Dark Spots": true,
-    "Aging & Fine Lines": true,
-    "Dehydration & Dullness": false,
-  };
+  // Düzenlenebilir alanlar için değişkenler
+  String _fullName = "Emma Richardson";
+  String _dateOfBirth = "March 15, 1992";
+
+  String _selectedGender = "Female";
+
+  // Varsayılan cilt tipi (Listeden biriyle eşleşmeli)
+  String _selectedSkinType = "KARMA CİLT";
+
+  // Veritabanından gelecek belirtiler listesi
+  List<String> _belirtiler = [];
+  bool _isLoading = true;
+
+  // Yeni Cilt Tipi Seçenekleri
+  final List<String> _skinTypeOptions = [
+    "YAĞLI / AKNEYE EĞİLİMLİ CİLT",
+    "KURU CİLT",
+    "KARMA CİLT",
+    "HASSAS / ROSACEA EĞİLİMLİ CİLT",
+    "LEKELİ / PİGMENTASYON SORUNLU CİLT",
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // Veritabanından belirtileri çekme fonksiyonu
+  Future<void> _loadUserData() async {
+    final storage = SkinAnalysisStorage();
+    final loadedData = await storage.loadAnalysisData();
+
+    if (loadedData != null) {
+      if (mounted) {
+        setState(() {
+          // 'belirtiler' anahtarını kullanıyoruz
+          _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
+          // Eğer veritabanında kayıtlı cilt tipi varsa onu seçili yap
+          if (loadedData['cilt_tipi'] != null &&
+              _skinTypeOptions.contains(loadedData['cilt_tipi'])) {
+            _selectedSkinType = loadedData['cilt_tipi'];
+          }
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // İsim veya Tarih düzenleme dialogu
+  void _showEditDialog(
+    String title,
+    String currentValue,
+    Function(String) onSave,
+  ) {
+    TextEditingController controller = TextEditingController(
+      text: currentValue,
+    );
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit $title"),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(hintText: "Enter new $title"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ProfileColors.primaryGreen,
+              ),
+              onPressed: () {
+                onSave(controller.text);
+                Navigator.pop(context);
+              },
+              child: const Text("Save", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,13 +132,26 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             const ProfileImageWidget(),
             const SizedBox(height: 30),
 
-            // 2. Form Alanları
-            const ReadOnlyField(label: "Full Name", value: "Emma Richardson"),
+            // 2. Form Alanları (Düzenlenebilir)
+            InteractiveField(
+              label: "Full Name",
+              value: _fullName,
+              onTap: () {
+                _showEditDialog("Full Name", _fullName, (newValue) {
+                  setState(() => _fullName = newValue);
+                });
+              },
+            ),
             const SizedBox(height: 15),
-            const ReadOnlyField(
+            InteractiveField(
               label: "Date of Birth",
-              value: "March 15, 1992",
+              value: _dateOfBirth,
               icon: Icons.calendar_today_outlined,
+              onTap: () {
+                _showEditDialog("Date of Birth", _dateOfBirth, (newValue) {
+                  setState(() => _dateOfBirth = newValue);
+                });
+              },
             ),
             const SizedBox(height: 25),
 
@@ -99,7 +193,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             ),
             const SizedBox(height: 25),
 
-            // 4. Cilt Tipi Seçimi
+            // 4. Cilt Tipi Seçimi (YENİ LİSTE YAPISI)
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -108,54 +202,19 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: SkinTypeCard(
-                    text: "Dry",
-                    icon: Icons.water_drop_outlined,
-                    isSelected: _selectedSkinType == "Dry",
-                    onTap: () => setState(() => _selectedSkinType = "Dry"),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SkinTypeCard(
-                    text: "Oily",
-                    icon: Icons.spa_outlined,
-                    isSelected: _selectedSkinType == "Oily",
-                    onTap: () => setState(() => _selectedSkinType = "Oily"),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: SkinTypeCard(
-                    text: "Combination",
-                    icon: Icons.layers_outlined,
-                    isSelected: _selectedSkinType == "Combination",
-                    onTap: () =>
-                        setState(() => _selectedSkinType = "Combination"),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SkinTypeCard(
-                    text: "Sensitive",
-                    icon: Icons.favorite_border,
-                    isSelected: _selectedSkinType == "Sensitive",
-                    onTap: () =>
-                        setState(() => _selectedSkinType = "Sensitive"),
-                  ),
-                ),
-              ],
+            // Uzun metinler için Column kullanıyoruz
+            Column(
+              children: _skinTypeOptions.map((type) {
+                return SkinTypeCard(
+                  text: type,
+                  isSelected: _selectedSkinType == type,
+                  onTap: () => setState(() => _selectedSkinType = type),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 25),
 
-            // 5. Cilt Sorunları (Map döngüsü)
+            // 5. Cilt Sorunları (VERİTABANINDAN GELEN LİSTE - Read Only)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -174,55 +233,34 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Skin Concerns (Select all that apply)",
+                    "Skin Concerns (Identified by Analysis)",
                     style: TextStyle(
                       color: ProfileColors.textLight,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 15),
-                  ..._skinConcerns.keys.map((key) {
-                    return CustomCheckboxItem(
-                      label: key,
-                      isChecked: _skinConcerns[key]!,
-                      onTap: () {
-                        setState(() {
-                          _skinConcerns[key] = !_skinConcerns[key]!;
-                        });
-                      },
-                    );
-                  }),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
 
-            // 6. Alerjiler
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: ProfileColors.cardWhite,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Allergies / Sensitivities",
-                    style: TextStyle(
-                      color: ProfileColors.textLight,
-                      fontSize: 12,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Fragrance, Essential Oils, Retinol",
-                    style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 16),
-                  ),
+                  // Liste boşsa veya yükleniyorsa durum kontrolü
+                  if (_isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: ProfileColors.primaryGreen,
+                      ),
+                    )
+                  else if (_belirtiler.isEmpty)
+                    const Text(
+                      "No specific concerns identified yet.",
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  else
+                    ..._belirtiler.map((concern) {
+                      return ReadOnlyListItem(label: concern);
+                    }),
                 ],
               ),
             ),
+            // Alerji kısmı tamamen kaldırıldı.
             const SizedBox(height: 25),
 
             // 7. Bilgi Kutusu
@@ -255,7 +293,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // Kaydetme işlemi
+                      // Kaydetme işlemi buraya eklenebilir
+                      // Örn: storage.saveProfile(_fullName, _dateOfBirth, _selectedSkinType);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ProfileColors.primaryGreen,
