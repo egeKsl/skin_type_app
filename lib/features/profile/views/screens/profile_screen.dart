@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
+import 'package:skin_type_app/core/services/scan_service.dart';
 import 'package:skin_type_app/features/scan history/views/screens/scan_history_screen.dart';
-// Yeni oluşturduğumuz widget'ları buraya çağırıyoruz:
+import 'package:skin_type_app/features/scan details/views/screens/scan_detail_screen.dart'; // Detay ekranı import
+import 'package:skin_type_app/models/scan_model.dart'; // Model import
+
 import '../widgets/stat_card.dart';
 import '../widgets/section_header.dart';
 import '../widgets/profile_list_tile.dart';
@@ -12,6 +15,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Servisi çağırıyoruz
+    final ScanService _scanService = ScanService();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -68,7 +74,7 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // 4. SCAN HISTORY
+            // 4. SCAN HISTORY (DİNAMİK HALE GETİRİLDİ)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
@@ -78,14 +84,13 @@ class ProfileScreen extends StatelessWidget {
                     title: "Scan History",
                     padding: EdgeInsets.zero,
                   ),
-                  // 📌 TIKLANABİLIR "View All" TEXT'İ
+                  // TIKLANABİLİR "View All" TEXT'İ
                   GestureDetector(
                     onTap: () {
-                      // 📌 Scan History ekranına git
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ScanHistoryScreen(),
+                          builder: (context) => const ScanHistoryScreen(),
                         ),
                       );
                     },
@@ -102,29 +107,62 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
 
-            // Tarihçe Listesi
-            const HistoryCard(
-              title: "Full Face Scan",
-              date: "2 days ago",
-              score: "87",
-              status: "Improving",
-              statusColor: Color(0xFFD1E9F6),
-            ),
-            const HistoryCard(
-              title: "Routine Check",
-              date: "1 week ago",
-              score: "82",
-              status: "Stable",
-              statusColor: Color(0xFFD1E9F6),
-            ),
-            const HistoryCard(
-              title: "Initial Scan",
-              date: "6 weeks ago",
-              score: "68",
-              status: "Baseline",
-              statusColor: Color(0xFFD1E9F6),
+            // --- YENİ EKLENEN KISIM: StreamBuilder ile Son 3 Veri ---
+            StreamBuilder<List<ScanResult>>(
+              // Sadece son 3 veriyi istiyoruz
+              stream: _scanService.getRecentScans(3),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: LinearProgressIndicator(color: Color(0xFF6B7C97)),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text("Veri yüklenemedi"));
+                }
+
+                final historyData = snapshot.data ?? [];
+
+                if (historyData.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      "No scan history available yet.",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                // Gelen listeyi HistoryCard widget'larına çeviriyoruz
+                return Column(
+                  children: historyData.map((scan) {
+                    return GestureDetector(
+                      onTap: () {
+                        // Tıklanınca detay sayfasına git
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ScanDetailScreen(scanResult: scan),
+                          ),
+                        );
+                      },
+                      child: HistoryCard(
+                        title: scan.ciltTipi, // Cilt tipi başlık
+                        date: scan.date, // Tarih
+                        score: scan.benzerlikYuzdesi, // Skor
+                        status:
+                            "Completed", // Durum (Statik veya hesaplanabilir)
+                        statusColor: const Color(0xFFD1E9F6),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
 
+            // -------------------------------------------------------
             const SizedBox(height: 20),
 
             // 5. SETTINGS
@@ -197,7 +235,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Header kısmı sadece bu ekrana özel olduğu için private metod olarak burada bıraktık
+  // Header Metodu (Değişmedi, sadece context erişimi için parametre eklendi)
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.only(top: 50, bottom: 20, left: 16, right: 16),
@@ -214,14 +252,12 @@ class ProfileScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // BURASI GÜNCELLENDİ: IconButton Kullanıldı
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () {
-                    Navigator.pop(context); // Bir önceki ekrana döner
+                    Navigator.pop(context);
                   },
                 ),
-
                 GestureDetector(
                   onTap: () {
                     showTopMenuOverlay(context);
@@ -232,8 +268,6 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
-          // ... Kalan kodlarınız aynı ...
           Row(
             children: [
               Stack(

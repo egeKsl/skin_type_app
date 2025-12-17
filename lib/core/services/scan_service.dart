@@ -54,4 +54,25 @@ class ScanService {
           }).toList();
         });
   }
+
+  Stream<List<ScanResult>> getRecentScans(int limit) {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return const Stream.empty();
+    }
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('scans')
+        .orderBy('created_at', descending: true) // En yeni en üstte
+        .limit(limit) // <--- SADECE İSTENEN SAYI KADAR GETİR (Örn: 3)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            return ScanResult.fromFirestore(doc);
+          }).toList();
+        });
+  }
 }
