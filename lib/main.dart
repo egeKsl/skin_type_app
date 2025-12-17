@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-
 import 'package:skin_type_app/features/login register/views/screens/auth_screen.dart';
 import 'package:skin_type_app/features/home/views/screens/home_screen.dart';
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:skin_type_app/constants/profile_colors.dart';
 import 'package:skin_type_app/core/services/auth_service.dart';
+import 'package:skin_type_app/core/services/user_service.dart';
 import 'package:skin_type_app/features/home/views/screens/home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLoginMode = true;
 
   final AuthService _authService = AuthService();
-
+  final UserService userService = UserService();
   // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -85,9 +86,13 @@ class _AuthScreenState extends State<AuthScreen> {
           throw Exception("Date of birth is required");
         }
 
-        await _authService.register(
+        final user = await _authService.register(
           email: email,
           password: password,
+        );
+        await userService.createUser(
+          uid: user.uid,
+          email: email,
           dateOfBirth: _selectedDob!,
         );
       }

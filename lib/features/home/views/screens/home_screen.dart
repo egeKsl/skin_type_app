@@ -8,6 +8,7 @@ import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/database/data_service.dart';
 import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
 import 'package:skin_type_app/features/natural%20ingredients/views/screens/natural_ingredients_screen.dart';
+import 'package:skin_type_app/core/services/scan_service.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
 
@@ -112,6 +113,13 @@ class _HomeScreenState extends State<HomeScreen>
 
         // 1. Analiz verisini kaydet
         await storage.saveAnalysisData(apiResponseData);
+
+        //firestore a kayıt yap
+        final scanService = ScanService();
+        await scanService.saveScan(
+          apiResponse: apiResponseData,
+          imagePath: image.path,
+        );
 
         // 2. Routine status'u sil
         await storage.deleteRoutineStatus();
