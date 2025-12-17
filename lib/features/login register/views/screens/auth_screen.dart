@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:skin_type_app/constants/profile_colors.dart';
+import 'package:skin_type_app/core/services/auth_service.dart';
+import 'package:skin_type_app/features/home/views/screens/home_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -10,28 +12,28 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  // Hangi moddayız? True = Login, False = Register
+  // True = Login, False = Register
   bool _isLoginMode = true;
 
-  // Controller'lar
+  final AuthService _authService = AuthService();
+
+  // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
 
-  // Şifre görünürlüğü
+  DateTime? _selectedDob;
+
   bool _obscurePassword = true;
 
-  // Tarih Seçici Göster
+  // ================= DATE PICKER =================
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(
-        const Duration(days: 365 * 18),
-      ), // Varsayılan 18 yaş
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       builder: (context, child) {
-        // Takvim renklerini temaya uydurma
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
@@ -44,40 +46,72 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       },
     );
+
     if (picked != null) {
       setState(() {
-        // intl paketi ile formatlama: "March 15, 1992" formatı
+        _selectedDob = picked;
         _dobController.text = DateFormat('MMMM dd, yyyy').format(picked);
       });
     }
   }
 
-  // Modu değiştir (Login <-> Register)
+  // ================= SWITCH MODE =================
   void _switchAuthMode() {
     setState(() {
       _isLoginMode = !_isLoginMode;
+      _emailController.clear();
+      _passwordController.clear();
+      _dobController.clear();
+      _selectedDob = null;
     });
-    // Mod değişince inputları temizle
-    _emailController.clear();
-    _passwordController.clear();
-    _dobController.clear();
   }
 
+  // ================= SUBMIT =================
+  Future<void> _submit() async {
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      if (email.isEmpty || password.isEmpty) {
+        throw Exception("Email and password are required");
+      }
+
+      if (_isLoginMode) {
+        // LOGIN
+        await _authService.login(email: email, password: password);
+      } else {
+        // REGISTER
+        if (_selectedDob == null) {
+          throw Exception("Date of birth is required");
+        }
+
+        await _authService.register(
+          email: email,
+          password: password,
+          dateOfBirth: _selectedDob!,
+        );
+      }
+
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
-    // Ekran boyutunu al (Responsive tasarım için)
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: ProfileColors.background,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. HEADER KISMI (Logo ve Başlık)
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -86,13 +120,14 @@ class _AuthScreenState extends State<AuthScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.spa_rounded, // Skincare temalı bir ikon
+                    Icons.spa_rounded,
                     size: 50,
                     color: ProfileColors.primaryGreen,
                   ),
                 ),
               ),
               const SizedBox(height: 30),
+
               Text(
                 _isLoginMode ? "Welcome Back!" : "Create Account",
                 style: const TextStyle(
@@ -110,8 +145,6 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 40),
 
-              // 2. FORM ALANLARI
-              // E-posta (Her iki modda da var)
               CustomAuthField(
                 label: "Email Address",
                 hintText: "example@mail.com",
@@ -121,7 +154,6 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Şifre (Her iki modda da var)
               CustomAuthField(
                 label: "Password",
                 hintText: "••••••••",
@@ -144,31 +176,23 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Doğum Tarihi (Sadece Register modunda var)
               if (!_isLoginMode)
                 CustomAuthField(
                   label: "Date of Birth",
                   hintText: "Select your birth date",
                   controller: _dobController,
-                  readOnly: true, // Klavye açılmasın
+                  readOnly: true,
                   prefixIcon: Icons.calendar_today_outlined,
-                  onTap: () =>
-                      _selectDate(context), // Tıklanınca takvim açılsın
+                  onTap: () => _selectDate(context),
                 ),
 
               const SizedBox(height: 40),
 
-              // 3. ANA BUTON (Login veya Sign Up)
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Buraya giriş/kayıt fonksiyonları gelecek
-                    print("Email: ${_emailController.text}");
-                    print("Password: ${_passwordController.text}");
-                    if (!_isLoginMode) print("DOB: ${_dobController.text}");
-                  },
+                  onPressed: _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ProfileColors.primaryGreen,
                     foregroundColor: Colors.white,
@@ -188,7 +212,6 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 25),
 
-              // 4. MOD DEĞİŞTİRME LİNKİ
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -218,7 +241,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-// --- ÖZEL INPUT WIDGET'I (Referans tasarıma uygun) ---
+// ================= CUSTOM INPUT =================
 class CustomAuthField extends StatelessWidget {
   final String label;
   final String hintText;
@@ -246,7 +269,6 @@ class CustomAuthField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
         color: ProfileColors.cardWhite,
@@ -262,7 +284,6 @@ class CustomAuthField extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Üstteki Etiket (Label)
           Text(
             label,
             style: const TextStyle(
@@ -270,23 +291,15 @@ class CustomAuthField extends StatelessWidget {
               fontSize: 12,
             ),
           ),
-          // Input Alanı
           TextFormField(
             controller: controller,
             obscureText: obscureText,
             keyboardType: keyboardType,
             readOnly: readOnly,
             onTap: onTap,
-            style: const TextStyle(
-              color: ProfileColors.textDark,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
             decoration: InputDecoration(
               hintText: hintText,
-              hintStyle: TextStyle(color: Colors.grey.shade400),
-              border: InputBorder.none, // Alt çizgiyi kaldır
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: InputBorder.none,
               prefixIcon: Icon(prefixIcon, color: ProfileColors.primaryGreen),
               suffixIcon: suffixIcon,
             ),
