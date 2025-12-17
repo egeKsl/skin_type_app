@@ -1,6 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:skin_type_app/core/services/scan_service.dart'; // Service import
-import 'package:skin_type_app/features/scan%20details/views/screens/scan_detail_screen.dart';
+import 'package:skin_type_app/core/services/scan_service.dart';
+import 'package:skin_type_app/features/scan details/views/screens/scan_detail_screen.dart';
 import 'package:skin_type_app/models/scan_model.dart';
 
 class ScanHistoryScreen extends StatelessWidget {
@@ -99,7 +100,6 @@ class ScanHistoryScreen extends StatelessWidget {
   Widget _buildHistoryCard(BuildContext context, ScanResult scan) {
     return GestureDetector(
       onTap: () {
-        // Tıklanan taramanın verilerini detay ekranına gönderiyoruz
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -123,20 +123,35 @@ class ScanHistoryScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Kamera İkonu
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0F4F8),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: Color(0xFF6B7C97),
-                size: 28,
+            // --- GÜNCELLENEN KISIM BAŞLANGIÇ ---
+            // Resim Alanı
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 60,
+                height: 60,
+                color: const Color(0xFFF0F4F8), // Resim yoksa arka plan rengi
+                child: (scan.imagePath != null && scan.imagePath!.isNotEmpty)
+                    ? Image.file(
+                        File(scan.imagePath!), // Telefon hafızasından okur
+                        fit: BoxFit.cover,
+                        // Eğer dosya silinmişse veya hata verirse ikon göster:
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.grey,
+                          );
+                        },
+                      )
+                    : const Icon(
+                        Icons.camera_alt_outlined,
+                        color: Color(0xFF6B7C97),
+                        size: 28,
+                      ),
               ),
             ),
+
+            // --- GÜNCELLENEN KISIM BİTİŞ ---
             const SizedBox(width: 16),
 
             // Bilgiler
