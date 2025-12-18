@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'package:image/image.dart' as img;
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -87,10 +90,10 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final cameras = await availableCameras();
 
-      // Ön kamerayı bul (Genelde yüz analizi için ön kamera kullanılır)
+      // Ön kamerayı bul
       final frontCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first, // Ön kamera yoksa ilkini al
+        orElse: () => cameras.first,
       );
 
       // 2. ÖZEL KAMERA EKRANINA GİT VE SONUCU BEKLE
@@ -103,20 +106,90 @@ class _HomeScreenState extends State<HomeScreen>
       );
     } catch (e) {
       print("Kamera hatası: $e");
-      return; // Kamera açılmazsa işlemi durdur
+      return;
     }
 
-    // Eğer kullanıcı geri tuşuna basıp fotoğraf çekmeden döndüyse işlem yapma
     if (imagePath == null) {
       return;
     }
 
     setState(() {
-      _selectedImage = File(
-        imagePath!,
-      ); // ImagePicker yerine gelen path'i kullanıyoruz
-      _resultText = '';
       _isLoading = true;
+    });
+
+    // --- AKILLI YÜZ TESPİTİ VE KIRPMA ---
+    FaceDetector? faceDetector;
+    try {
+      final options = FaceDetectorOptions(
+        performanceMode: FaceDetectorMode.accurate,
+        enableLandmarks: false,
+        enableClassification: false,
+      );
+      faceDetector = FaceDetector(options: options);
+
+      final inputImage = InputImage.fromFilePath(imagePath!);
+      final List<Face> faces = await faceDetector.processImage(inputImage);
+
+      if (faces.isNotEmpty) {
+        final Face mainFace = faces.first;
+        final Rect boundingBox = mainFace.boundingBox;
+
+        final File originalFile = File(imagePath!);
+        final bytes = await originalFile.readAsBytes();
+        img.Image? originalImage = img.decodeImage(bytes);
+
+        if (originalImage != null) {
+          // DÜZELTME: Exif kontrolünü elle yapmaya gerek yok.
+          // bakeOrientation fonksiyonu gerekliyse resmi düzeltir, değilse dokunmaz.
+          originalImage = img.bakeOrientation(originalImage);
+
+          // Padding (Boşluk) Ekleme (%15)
+          const double paddingPercentage = 0.15;
+          final int paddingX = (boundingBox.width * paddingPercentage).toInt();
+          final int paddingY = (boundingBox.height * paddingPercentage).toInt();
+
+          // DÜZELTME: min ve max artık çalışacak (import 'dart:math'; eklendiği için)
+          int x = max(0, boundingBox.left.toInt() - paddingX);
+          int y = max(0, boundingBox.top.toInt() - paddingY);
+          int w = min(
+            originalImage.width - x,
+            boundingBox.width.toInt() + (paddingX * 2),
+          );
+          int h = min(
+            originalImage.height - y,
+            boundingBox.height.toInt() + (paddingY * 2),
+          );
+
+          // Resmi kes
+          final img.Image croppedImage = img.copyCrop(
+            originalImage,
+            x: x,
+            y: y,
+            width: w,
+            height: h,
+          );
+
+          // Kaydet
+          final String croppedPath = imagePath!.replaceFirst(
+            '.jpg',
+            '_face_cropped.jpg',
+          );
+          final File croppedFile = File(croppedPath)
+            ..writeAsBytesSync(img.encodeJpg(croppedImage));
+
+          imagePath = croppedFile.path;
+        }
+      }
+    } catch (e) {
+      print("Yüz tespit/kırpma hatası: $e");
+    } finally {
+      faceDetector?.close();
+    }
+    // -------------------------------------------------------
+
+    setState(() {
+      _selectedImage = File(imagePath!);
+      _resultText = '';
     });
 
     try {
@@ -137,23 +210,16 @@ class _HomeScreenState extends State<HomeScreen>
         final Map<String, dynamic> apiResponseData = json.decode(cleanedJson);
         final storage = SkinAnalysisStorage();
 
-        // 1. Analiz verisini kaydet
         await storage.saveAnalysisData(apiResponseData);
 
-        // firestore a kayıt yap
         final scanService = ScanService();
         await scanService.saveScan(
           apiResponse: apiResponseData,
-          imagePath: _selectedImage!.path, // Güncel path
+          imagePath: _selectedImage!.path,
         );
 
-        // 2. Routine status'u sil
         await storage.deleteRoutineStatus();
-
-        // 📌 3. RESİM YOLUNU KAYDET
         await storage.saveFaceImagePath(_selectedImage!.path);
-
-        // 4. Veri kaydedildikten sonra ekrandaki belirtileri güncelle
         await _loadDatabase();
       } else {
         print("API HATA: ${response.statusCode} | $responseBody");
