@@ -26,7 +26,7 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
     _loadLatestScan();
   }
 
-  // En son tarama ID'sini alıyoruz (favoriler tarama bazlı tutulduğu için)
+  // Favorilerin bağlı olduğu en son tarama ID'sini yakalıyoruz
   void _loadLatestScan() {
     _scanService.getRecentScans(1).listen((scans) {
       if (scans.isNotEmpty && mounted) {
@@ -54,6 +54,7 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
     );
   }
 
+  // Mor Gradyan Başlık Alanı
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -76,7 +77,7 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
                 child: const Icon(Icons.arrow_back, color: Colors.white),
               ),
               const Text(
-                "Favorite Ingredients",
+                "Favori İçerikler",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -99,7 +100,7 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // ARAMA ÇUBUĞU
+          // Arama Çubuğu
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 15),
             decoration: BoxDecoration(
@@ -112,13 +113,14 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
                   setState(() => _searchQuery = val.toLowerCase()),
               decoration: const InputDecoration(
                 icon: Icon(Icons.search, color: Colors.grey),
-                hintText: "Search favorites...",
+                hintText: "İçeriklerde ara...",
                 border: InputBorder.none,
               ),
             ),
           ),
           const SizedBox(height: 20),
-          // SEKME SEÇİCİ
+
+          // Kimyasal / Doğal Seçici (Tab)
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -127,13 +129,14 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
             ),
             child: Row(
               children: [
-                _buildTabButton("Chemical\nIngredients", true),
-                _buildTabButton("Natural\nIngredients", false),
+                _buildTabButton("Kimyasal\nİçerikler", true),
+                _buildTabButton("Doğal\nİçerikler", false),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          // LİSTE ALANI
+
+          // Firestore Veri Listesi
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: _scanService.getFavorites(
@@ -147,7 +150,7 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
 
                 final docs = snapshot.data ?? [];
 
-                // Arama Filtresi
+                // Arama Filtrelemesi
                 final filteredDocs = docs.where((doc) {
                   final name = (doc['isim'] ?? "").toString().toLowerCase();
                   return name.contains(_searchQuery);
@@ -157,8 +160,8 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
                   return Center(
                     child: Text(
                       _searchQuery.isEmpty
-                          ? "No favorites yet."
-                          : "No results found.",
+                          ? "Henüz favori yok."
+                          : "Sonuç bulunamadı.",
                       style: const TextStyle(color: Colors.grey),
                     ),
                   );
@@ -169,15 +172,26 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
                   itemCount: filteredDocs.length,
                   itemBuilder: (context, index) {
                     final item = filteredDocs[index];
+                    final String name = item['isim'] ?? "Bilinmiyor";
+
                     return IngredientItemCard(
-                      title: item['isim'] ?? "Unknown",
-                      description:
-                          item['ai_analizi'] ?? "No analysis available.",
+                      title: name,
+                      description: item['ai_analizi'] ?? "Analiz mevcut değil.",
                       icon: _isChemicalSelected ? Icons.science : Icons.eco,
                       iconColor: _isChemicalSelected
                           ? const Color(0xFF9575CD)
                           : const Color(0xFF4CAF50),
                       tags: List<String>.from(item['temel_faydalar'] ?? []),
+                      onRemove: () async {
+                        // Canvas üzerindeki removeFavorite metodunu çağırıyoruz
+                        await _scanService.removeFavorite(
+                          scanId: _latestScanId!,
+                          collectionName: _isChemicalSelected
+                              ? 'kimyasal_favoriler'
+                              : 'dogal_favoriler',
+                          ingredientName: name,
+                        );
+                      },
                     );
                   },
                 );

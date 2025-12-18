@@ -6,7 +6,7 @@ class ScanService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Veriyi Kaydetme (Geri Getirildi)
+  // 1. Veriyi Kaydetme
   Future<void> saveScan({
     required Map<String, dynamic> apiResponse,
     required String imagePath,
@@ -31,7 +31,7 @@ class ScanService {
     });
   }
 
-  // 2. Tüm Taramaları Çekme - Stream (Geri Getirildi)
+  // 2. Tüm Taramaları Çekme - Stream
   Stream<List<ScanResult>> getScans() {
     final user = _auth.currentUser;
 
@@ -93,5 +93,31 @@ class ScanService {
             return ScanResult.fromFirestore(doc);
           }).toList();
         });
+  }
+
+  // 5. Favorilerden Ürün Kaldırma (Yeni Eklendi)
+  // Bu metod çağrıldığında Firestore'daki doküman silinir ve anlık dinleyiciler (stream) sayesinde UI otomatik güncellenir.
+  Future<void> removeFavorite({
+    required String scanId,
+    required String collectionName,
+    required String ingredientName,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('scans')
+          .doc(scanId)
+          .collection(collectionName)
+          .doc(ingredientName)
+          .delete();
+
+      print("✅ $ingredientName favorilerden kaldırıldı.");
+    } catch (e) {
+      print("❌ Favori kaldırma hatası: $e");
+    }
   }
 }
