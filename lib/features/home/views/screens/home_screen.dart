@@ -33,7 +33,8 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isLoading = false;
   List<String> _belirtiler = [];
   List<String> _ihtiyaclar = [];
-  List<String> _kimyasalIcerikler = [];
+  // Yeni nesne yapısını desteklemek için List<dynamic> yapıldı
+  List<dynamic> _kimyasalIcerikler = [];
   String _cilt_tipi = '';
   String _cilt_tipi_benzerlik_yuzdesi = '';
 
@@ -48,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen>
     final loadedData = await storage.loadAnalysisData();
     String? savedImagePath = await storage.loadFaceImagePath();
 
-    // 📌 KAYITLI RESİM YOLUNU YÜKLE
     if (savedImagePath != null) {
       File imageFile = File(savedImagePath);
       bool fileExists = await imageFile.exists();
@@ -72,7 +72,8 @@ class _HomeScreenState extends State<HomeScreen>
           _cilt_tipi = loadedData['cilt_tipi'] ?? "Bilinmiyor";
           _cilt_tipi_benzerlik_yuzdesi =
               loadedData['cilt_tipi_benzerlik_yuzdesi'] ?? "Bilinmiyor";
-          _kimyasalIcerikler = List<String>.from(
+          // Dinamik listeyi (map listesi) doğru şekilde yüklüyoruz
+          _kimyasalIcerikler = List<dynamic>.from(
             loadedData['kimyasal_aktif_icerikler'] ?? [],
           );
         });
@@ -85,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    // 1. ÖNCE KAMERALARI BUL
     String? imagePath;
     try {
       final cameras = await availableCameras();
@@ -94,7 +94,6 @@ class _HomeScreenState extends State<HomeScreen>
         orElse: () => cameras.first,
       );
 
-      // 2. FOTOĞRAF ÇEKİMİ
       if (!mounted) return;
       imagePath = await Navigator.push(
         context,
@@ -113,11 +112,10 @@ class _HomeScreenState extends State<HomeScreen>
       _isLoading = true;
     });
 
-    // --- YÜZ TESPİTİ VE TAM ÇERÇEVE KESME ---
     FaceDetector? faceDetector;
     try {
       final options = FaceDetectorOptions(
-        performanceMode: FaceDetectorMode.accurate, // En hassas mod
+        performanceMode: FaceDetectorMode.accurate,
         enableLandmarks: false,
         enableClassification: false,
       );
@@ -135,27 +133,18 @@ class _HomeScreenState extends State<HomeScreen>
         img.Image? originalImage = img.decodeImage(bytes);
 
         if (originalImage != null) {
-          // Exif düzeltmesi
           originalImage = img.bakeOrientation(originalImage);
-
-          // --- DEĞİŞİKLİK BURADA ---
-          // Padding (boşluk) hesaplamalarını tamamen sildik.
-          // Doğrudan tespit edilen yüzün koordinatlarını alıyoruz.
 
           int x = boundingBox.left.toInt();
           int y = boundingBox.top.toInt();
           int w = boundingBox.width.toInt();
           int h = boundingBox.height.toInt();
 
-          // GÜVENLİK KONTROLÜ:
-          // Bazen tespit edilen koordinatlar resmin sınırının 1-2 piksel dışına çıkabilir.
-          // Uygulamanın çökmemesi için sınırları resim boyutuna sabitliyoruz.
           if (x < 0) x = 0;
           if (y < 0) y = 0;
           if (x + w > originalImage.width) w = originalImage.width - x;
           if (y + h > originalImage.height) h = originalImage.height - y;
 
-          // Resmi tam yüz sınırlarından kes
           final img.Image croppedImage = img.copyCrop(
             originalImage,
             x: x,
@@ -164,7 +153,6 @@ class _HomeScreenState extends State<HomeScreen>
             height: h,
           );
 
-          // Kaydet
           final String croppedPath = imagePath!.replaceFirst(
             '.jpg',
             '_face_only.jpg',
@@ -180,14 +168,12 @@ class _HomeScreenState extends State<HomeScreen>
     } finally {
       faceDetector?.close();
     }
-    // -------------------------------------------------------
 
     setState(() {
       _selectedImage = File(imagePath!);
       _resultText = '';
     });
 
-    // API İSTEĞİ (Burası aynı kalıyor)
     try {
       final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
       request.files.add(
@@ -238,39 +224,33 @@ class _HomeScreenState extends State<HomeScreen>
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. ÜST MENÜ ALANI
             _buildCollapsedHeader(),
-
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // 2. CURRENT ISSUES & RISKS (Widget Kullanımı)
                   InfoSectionCard(
                     title: "Current Issues",
-                    count: _belirtiler.length.toString(), // Dinamik sayı
-                    color: const Color(0xFFFFEBEE), // Açık kırmızı
+                    count: _belirtiler.length.toString(),
+                    color: const Color(0xFFFFEBEE),
                     iconColor: Colors.red,
                     items: _belirtiler.isEmpty
-                        ? ["Veri bekleniyor..."]
-                        : _belirtiler, // Dinamik liste
+                        ? ["data is being waiting..."]
+                        : _belirtiler,
                     titleIcon: Icons.warning_amber_rounded,
                   ),
                   const SizedBox(height: 15),
-
                   InfoSectionCard(
                     title: "Needs",
-                    count: "2",
-                    color: Color(0xFFFFF3E0), // Açık turuncu
+                    count: _ihtiyaclar.length.toString(),
+                    color: const Color(0xFFFFF3E0),
                     iconColor: Colors.orange,
                     items: _ihtiyaclar.isEmpty
-                        ? ["Veri bekleniyor..."]
+                        ? ["data is being waiting..."]
                         : _ihtiyaclar,
                     titleIcon: Icons.check_circle_outline,
                   ),
                   const SizedBox(height: 15),
-
-                  // 3. SKIN TYPE (Basit olduğu için burada bıraktım)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(15),
@@ -297,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen>
                           children: [
                             Text(
                               _cilt_tipi,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -313,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               child: Text(
                                 _cilt_tipi_benzerlik_yuzdesi,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.green,
                                   fontSize: 12,
                                 ),
@@ -325,12 +305,10 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                   ),
                   const SizedBox(height: 25),
-
-                  // 4. RECOMMENDED FOR YOU
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         "Recommended For You",
                         style: TextStyle(
                           fontSize: 18,
@@ -343,11 +321,11 @@ class _HomeScreenState extends State<HomeScreen>
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  const NaturalIngredientsScreen(), // Hedef Ekran
+                                  const NaturalIngredientsScreen(),
                             ),
                           );
                         },
-                        child: Text(
+                        child: const Text(
                           "See All",
                           style: TextStyle(
                             color: AppColors.primaryPurple,
@@ -358,38 +336,37 @@ class _HomeScreenState extends State<HomeScreen>
                     ],
                   ),
                   const SizedBox(height: 15),
-
-                  // Yatay Liste
                   SizedBox(
-                    height: 350,
+                    height:
+                        400, // İçerik zenginleştiği için yükseklik artırıldı
                     child: _kimyasalIcerikler.isEmpty
-                        ? const Center(
-                            child: Text("Veri bekleniyor..."),
-                          ) // Liste boşsa bu çalışır
+                        ? const Center(child: Text("data is being waiting..."))
                         : ListView.builder(
-                            // Liste doluysa burası çalışır
                             scrollDirection: Axis.horizontal,
                             itemCount: _kimyasalIcerikler.length,
                             itemBuilder: (context, index) {
-                              // Listedeki sıradaki içeriği al
-                              final icerikAdi = _kimyasalIcerikler[index];
+                              // Artık her bir öğe bir Map formatındadır
+                              final item = _kimyasalIcerikler[index];
+
+                              // Map içinden değerleri çekiyoruz
+                              final String isim =
+                                  item['isim'] ?? "Unknown ingredient";
+                              final String analiz =
+                                  item['ai_analizi'] ??
+                                  "According to your skin,these ingredients has been suggested to you.";
 
                               return ProductCard(
-                                title:
-                                    icerikAdi, // API'den gelen isim (Örn: Salicylic Acid)
+                                title: isim,
                                 subtitle: "Active Ingredient",
                                 tagColor: Colors.blueAccent,
-                                tagText: "RECOMMENDED",
+                                tagText: "suggested for you",
                                 desc:
-                                    "Based on your skin analysis, this ingredient is recommended.",
+                                    analiz, // AI analizi açıklamaya yerleştirildi
                               );
                             },
                           ),
                   ),
-
                   const SizedBox(height: 30),
-
-                  // 5. START YOUR JOURNEY
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(25),
@@ -421,12 +398,11 @@ class _HomeScreenState extends State<HomeScreen>
                         const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: () {
-                            // SAYFA GEÇİŞ KODU BURADA
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    const WeeklyRoutineScreen(), // Hedef Ekran
+                                    const WeeklyRoutineScreen(),
                               ),
                             );
                           },
@@ -449,11 +425,9 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // Menü KAPALIYKEN görünen Yüz Tanıma Başlık ve Görsel Alanı
   Widget _buildCollapsedHeader() {
     return Container(
       padding: const EdgeInsets.only(top: 40, bottom: 20),
-      // Yüz tanıma görselinin altına gölge vermek için kutuyu genişletiyoruz
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -476,7 +450,6 @@ class _HomeScreenState extends State<HomeScreen>
                   'Skin Analysis',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                // Menüyü açmak için sağ üstteki buton
                 GestureDetector(
                   onTap: () {
                     showTopMenuOverlay(context);
@@ -487,14 +460,12 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(height: 20),
-
-          // YÜZ GÖRSELİ Placeholder
           GestureDetector(
             onTap: _pickImageAndSend,
             child: Container(
               height: 250,
               width: double.infinity,
-              color: Colors.grey[100], // Resim Placeholder'ı
+              color: Colors.grey[100],
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -544,10 +515,10 @@ class _HomeScreenState extends State<HomeScreen>
                         Flexible(
                           child: Text(
                             _isLoading
-                                ? 'Analiz ediliyor...'
+                                ? 'Analyzing...'
                                 : (_resultText.isNotEmpty
                                       ? _resultText
-                                      : 'Fotoğraf seçmek için dokun'),
+                                      : 'Click to analysis'),
                             style: const TextStyle(
                               color: AppColors.primaryPurple,
                               fontWeight: FontWeight.bold,
