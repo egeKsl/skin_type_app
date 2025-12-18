@@ -6,6 +6,7 @@ import 'package:skin_type_app/features/profile/views/screens/profile_screen.dart
 import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
 import 'package:skin_type_app/features/natural ingredients/views/screens/natural_ingredients_screen.dart';
 import 'package:skin_type_app/features/favorite ingredients/views/screens/favorite_ingredients_screen.dart';
+import 'package:skin_type_app/features/chemical ingredients/views/screens/chemical_ingredients_screen.dart';
 import 'package:skin_type_app/features/help/views/screens/help_screen.dart';
 
 /// Shows the shared top menu as a dialog sliding from the top.
@@ -134,14 +135,26 @@ class _TopMenuOverlayContent extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             MenuItemRow(
+              icon: Icons.eco_outlined,
+              text: "Chemical Products",
+              onTap: () {
+                onClose();
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ChemicalIngredientsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            MenuItemRow(
               icon: Icons.favorite_border,
               text: "Favorite Ingredients",
               onTap: () {
                 onClose();
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) =>
-                        const FavoriteIngredientsScreen(),
+                    builder: (context) => const FavoriteIngredientsScreen(),
                   ),
                 );
               },
@@ -153,9 +166,7 @@ class _TopMenuOverlayContent extends StatelessWidget {
               onTap: () {
                 onClose();
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const HelpScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const HelpScreen()),
                 );
               },
             ),
@@ -165,5 +176,3 @@ class _TopMenuOverlayContent extends StatelessWidget {
     );
   }
 }
-
-
