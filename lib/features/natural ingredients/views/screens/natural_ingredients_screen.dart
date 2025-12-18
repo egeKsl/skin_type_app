@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
-import 'package:skin_type_app/core/database/data_service.dart'; // Storage servisini import et
-import '../widgets/ai_recommendation_card.dart';
-import '../widgets/ingredient_card.dart';
-import '../widgets/usage_tip_card.dart';
+import 'package:skin_type_app/core/services/scan_service.dart'; // Firebase Servisi
+import 'package:skin_type_app/models/scan_model.dart'; // Model dosyası
+import 'package:skin_type_app/features/natural ingredients/views/widgets/ai_recommendation_card.dart';
+import 'package:skin_type_app/features/natural ingredients/views/widgets/ingredient_card.dart';
+import 'package:skin_type_app/features/natural ingredients/views/widgets/usage_tip_card.dart';
 
 class NaturalIngredientsScreen extends StatefulWidget {
   const NaturalIngredientsScreen({super.key});
@@ -15,37 +16,56 @@ class NaturalIngredientsScreen extends StatefulWidget {
 }
 
 class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
-  // Veritabanından gelecek listeyi tutacak değişken
-  List<String> _dogalIcerikler = [];
+  final ScanService _scanService = ScanService();
+  List<dynamic> _dogalIcerikler = [];
+  String _matchPercentage = "95%";
   bool _isLoading = true;
+
+  // Doğal içerikler için yeşil tonlarında bir tema rengi
+  final Color primaryNaturalColor = const Color(0xFF4CAF50);
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadFirebaseData();
   }
 
-  // Veritabanından veriyi çeken fonksiyon
-  Future<void> _loadData() async {
-    final storage = SkinAnalysisStorage();
-    final loadedData = await storage.loadAnalysisData();
+  // Firebase'den en son tarama verisini çeken fonksiyon (Doğal içerikler odaklı)
+  Future<void> _loadFirebaseData() async {
+    try {
+      _scanService
+          .getRecentScans(1)
+          .listen(
+            (scans) {
+              if (scans.isNotEmpty && mounted) {
+                final ScanResult lastScan = scans.first;
 
-    if (loadedData != null) {
-      print(loadedData['dogal_icerikler']);
-      if (mounted) {
-        setState(() {
-          _dogalIcerikler = List<String>.from(
-            loadedData['dogal_icerikler'] ?? [],
+                setState(() {
+                  // Model üzerinden doğrudan 'dogalIcerikler' listesini alıyoruz
+                  _dogalIcerikler = lastScan.dogalIcerikler;
+
+                  _matchPercentage = lastScan.benzerlikYuzdesi.isNotEmpty
+                      ? lastScan.benzerlikYuzdesi
+                      : "95%";
+
+                  _isLoading = false;
+                });
+
+                debugPrint(
+                  "✅ Firebase doğal içerik verisi yüklendi: ${lastScan.ciltTipi}",
+                );
+              } else if (mounted) {
+                setState(() => _isLoading = false);
+              }
+            },
+            onError: (error) {
+              debugPrint("❌ Firebase dinleme hatası: $error");
+              if (mounted) setState(() => _isLoading = false);
+            },
           );
-          _isLoading = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    } catch (e) {
+      debugPrint("❌ Genel hata: $e");
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -56,12 +76,12 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. ÜST HEADER ve GREEN BACKGROUND
+            /// HEADER
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.naturalGreen, Color(0xFFA5D6A7)],
+                  colors: [primaryNaturalColor, const Color(0xFFA5D6A7)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -75,7 +95,6 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Navbar
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -95,20 +114,16 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            showTopMenuOverlay(context);
-                          },
+                          onTap: () => showTopMenuOverlay(context),
                           child: const Icon(Icons.menu, color: Colors.white),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
-
-                    // Yeşil Daire İkon
                     Container(
                       padding: const EdgeInsets.all(15),
                       decoration: const BoxDecoration(
-                        color: Colors.white24, // Yarı saydam beyaz
+                        color: Colors.white24,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -118,10 +133,8 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
-                    // Başlıklar
                     const Text(
-                      "Plant-Based Support",
+                      "Herbal Solutions",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -130,28 +143,28 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                     ),
                     const SizedBox(height: 5),
                     const Text(
-                      "Natural ingredients curated for your skin type",
+                      "Pure ingredients sourced from nature",
                       style: TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 25),
-
-                    // AI Recommendation Kartı
                     const AiRecommendationCard(),
                   ],
                 ),
               ),
             ),
 
-            // 2. İÇERİK KISMI
+            /// CONTENT
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Recommended For You Başlığı
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildSectionTitle("Recommended for You"),
+                      _buildSectionTitle(
+                        "Nature's Actives",
+                        primaryNaturalColor,
+                      ),
                       const Text(
                         "Swipe to explore",
                         style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -160,31 +173,37 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // YATAY LİSTE (Ingredient Cards - DİNAMİK)
                   SizedBox(
                     height: 550,
                     child: _isLoading
-                        ? const Center(
+                        ? Center(
                             child: CircularProgressIndicator(
-                              color: AppColors.naturalGreen,
+                              color: primaryNaturalColor,
                             ),
                           )
                         : _dogalIcerikler.isEmpty
-                        ? const Center(child: Text("No data found."))
+                        ? const Center(
+                            child: Text("No natural ingredients found."),
+                          )
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             clipBehavior: Clip.none,
                             itemCount: _dogalIcerikler.length,
                             itemBuilder: (context, index) {
-                              final icerikAdi = _dogalIcerikler[index];
+                              final item = _dogalIcerikler[index];
 
                               return IngredientCard(
-                                title: icerikAdi,
-                                // API sadece isim verdiği için şimdilik standart açıklama giriyoruz
-                                description:
-                                    "Natural extract recommended based on your skin analysis.",
-                                // Görsel amaçlı rastgele bir eşleşme oranı veriyoruz
-                                matchPercentage: "9${5 - (index % 5)}% Match",
+                                title: item['isim'] ?? "Unknown",
+                                benefits: List<String>.from(
+                                  item['temel_faydalar'] ?? [],
+                                ),
+                                usage:
+                                    item['nasil_kullanilir'] ??
+                                    "Apply as part of your skincare routine.",
+                                aiAnalysis:
+                                    item['ai_analizi'] ??
+                                    "Selected specifically for your skin concerns.",
+                                matchPercentage: _matchPercentage,
                               );
                             },
                           ),
@@ -192,49 +211,30 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
 
                   const SizedBox(height: 30),
 
-                  // USAGE TIPS Başlığı
-                  Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 20,
-                        color: Colors.blueAccent,
-                        margin: const EdgeInsets.only(right: 10),
-                      ),
-                      const Text(
-                        "Usage Tips",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildSectionTitle("Natural Care Guide", primaryNaturalColor),
                   const SizedBox(height: 15),
 
-                  // İpuçları Listesi
                   const UsageTipCard(
-                    icon: Icons.lightbulb,
-                    iconBgColor: Color(0xFFFFF9C4),
-                    title: "Patch Test First",
+                    icon: Icons.eco_outlined,
+                    iconBgColor: Color(0xFFE8F5E9),
+                    title: "Freshness",
                     description:
-                        "Always test new natural ingredients on a small skin area before full application.",
+                        "Natural extracts work best when fresh and properly stored.",
                   ),
                   const UsageTipCard(
-                    icon: Icons.access_time_filled,
-                    iconBgColor: Color(0xFFBBDEFB),
-                    title: "Gradual Introduction",
+                    icon: Icons.health_and_safety_outlined,
+                    iconBgColor: Color(0xFFF1F8E9),
+                    title: "Patch Test",
                     description:
-                        "Start with 2-3 times per week, then increase frequency as your skin adapts.",
+                        "Always test natural oils on a small area first.",
                   ),
                   const UsageTipCard(
-                    icon: Icons.verified,
-                    iconBgColor: Color(0xFFC8E6C9),
-                    title: "Quality Matters",
+                    icon: Icons.opacity,
+                    iconBgColor: Color(0xFFE0F2F1),
+                    title: "Concentration",
                     description:
-                        "Choose organic, cold-pressed oils and extracts for maximum potency and benefits.",
+                        "Nature is powerful. A little amount goes a long way.",
                   ),
-                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -244,14 +244,13 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
     );
   }
 
-  // Başlık stil yardımcısı
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, Color color) {
     return Row(
       children: [
         Container(
           width: 4,
           height: 20,
-          color: AppColors.naturalGreen,
+          color: color,
           margin: const EdgeInsets.only(right: 10),
         ),
         Text(

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
-import 'package:skin_type_app/core/database/data_service.dart';
+import 'package:skin_type_app/core/services/scan_service.dart'; // Firebase Servisi
+import 'package:skin_type_app/models/scan_model.dart'; // Model dosyası
 import 'package:skin_type_app/features/natural ingredients/views/widgets/ai_recommendation_card.dart';
 import 'package:skin_type_app/features/natural ingredients/views/widgets/ingredient_card.dart';
 import 'package:skin_type_app/features/natural ingredients/views/widgets/usage_tip_card.dart';
-//import '../widgets/usage_tip_card.dart';
 
 class ChemicalIngredientsScreen extends StatefulWidget {
   const ChemicalIngredientsScreen({super.key});
@@ -16,31 +16,59 @@ class ChemicalIngredientsScreen extends StatefulWidget {
 }
 
 class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
-  List<String> _kimyasalIcerikler = [];
+  final ScanService _scanService = ScanService();
+  List<dynamic> _kimyasalIcerikler = [];
+  String _matchPercentage = "95%";
   bool _isLoading = true;
 
-  // Tema rengi (compile-time const OLMASI ŞART DEĞİL)
-  final Color primaryScientificColor = const Color(0xFF5C6BC0);
+  final Color primaryScientificColor = const Color.fromARGB(255, 14, 19, 49);
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadFirebaseData();
   }
 
-  Future<void> _loadData() async {
-    final storage = SkinAnalysisStorage();
-    final loadedData = await storage.loadAnalysisData();
+  // Firebase'den en son tarama verisini çeken fonksiyon
+  Future<void> _loadFirebaseData() async {
+    try {
+      // getRecentScans(1) Stream'i bize List<ScanResult> döndürür
+      _scanService
+          .getRecentScans(1)
+          .listen(
+            (scans) {
+              if (scans.isNotEmpty && mounted) {
+                // Artık elimizde ham bir Map değil, bir ScanResult nesnesi var
+                final ScanResult lastScan = scans.first;
 
-    if (loadedData != null && mounted) {
-      setState(() {
-        _kimyasalIcerikler = List<String>.from(
-          loadedData['kimyasal_aktif_icerikler'] ?? [],
-        );
-        _isLoading = false;
-      });
-    } else if (mounted) {
-      setState(() => _isLoading = false);
+                setState(() {
+                  // Model içindeki alanlara direkt erişiyoruz
+                  // ScanResult zaten raw_ai_output'u parse edip bu listeleri doldurmuş durumda
+                  _kimyasalIcerikler = lastScan.kimyasalIcerikler;
+
+                  // Yüzde bilgisini de modelden alıyoruz
+                  _matchPercentage = lastScan.benzerlikYuzdesi.isNotEmpty
+                      ? lastScan.benzerlikYuzdesi
+                      : "95%";
+
+                  _isLoading = false;
+                });
+
+                debugPrint(
+                  "✅ Firebase verisi yeni model üzerinden başarıyla yüklendi: ${lastScan.ciltTipi}",
+                );
+              } else if (mounted) {
+                setState(() => _isLoading = false);
+              }
+            },
+            onError: (error) {
+              debugPrint("❌ Firebase dinleme hatası: $error");
+              if (mounted) setState(() => _isLoading = false);
+            },
+          );
+    } catch (e) {
+      debugPrint("❌ Genel hata: $e");
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -55,7 +83,6 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                // ❗ const KALDIRILDI
                 gradient: LinearGradient(
                   colors: [primaryScientificColor, const Color(0xFF9FA8DA)],
                   begin: Alignment.topCenter,
@@ -96,7 +123,6 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-
                     Container(
                       padding: const EdgeInsets.all(15),
                       decoration: const BoxDecoration(
@@ -110,7 +136,6 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-
                     const Text(
                       "Clinical Formulations",
                       style: TextStyle(
@@ -125,7 +150,6 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                       style: TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 25),
-
                     const AiRecommendationCard(),
                   ],
                 ),
@@ -153,7 +177,7 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                   const SizedBox(height: 15),
 
                   SizedBox(
-                    height: 550, // 🔴 Natural ile AYNI
+                    height: 550,
                     child: _isLoading
                         ? Center(
                             child: CircularProgressIndicator(
@@ -167,11 +191,22 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                             clipBehavior: Clip.none,
                             itemCount: _kimyasalIcerikler.length,
                             itemBuilder: (context, index) {
+                              // Veritabanı şemasına göre nesneyi alıyoruz
+                              final item = _kimyasalIcerikler[index];
+
                               return IngredientCard(
-                                title: _kimyasalIcerikler[index],
-                                description:
-                                    "Powerful active ingredient targeting specific skin concerns.",
-                                matchPercentage: "9${8 - (index % 5)}% Match",
+                                title: item['isim'] ?? "Unknown",
+                                // List<dynamic>'i List<String>'e çeviriyoruz
+                                benefits: List<String>.from(
+                                  item['temel_faydalar'] ?? [],
+                                ),
+                                usage:
+                                    item['nasil_kullanilir'] ??
+                                    "Follow package instructions.",
+                                aiAnalysis:
+                                    item['ai_analizi'] ??
+                                    "Recommended based on scan.",
+                                matchPercentage: _matchPercentage,
                               );
                             },
                           ),

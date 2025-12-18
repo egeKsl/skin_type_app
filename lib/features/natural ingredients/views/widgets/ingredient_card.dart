@@ -3,20 +3,24 @@ import 'package:skin_type_app/constants/app_colors.dart';
 
 class IngredientCard extends StatelessWidget {
   final String title;
-  final String description;
+  final List<String> benefits; // Dinamik maddeler
+  final String usage; // Dinamik kullanım talimatı
+  final String aiAnalysis; // Dinamik AI analizi
   final String matchPercentage;
 
   const IngredientCard({
     super.key,
     required this.title,
-    required this.description,
+    required this.benefits,
+    required this.usage,
+    required this.aiAnalysis,
     required this.matchPercentage,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 300,
+      width: 320, // İçerik arttığı için genişlik biraz artırıldı
       margin: const EdgeInsets.only(right: 16, bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -32,17 +36,15 @@ class IngredientCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Resim Alanı KALDIRILDI
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 2. Başlık ve Etiket
+                // 1. Başlık ve Etiket
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Overflow hatasını çözmek için Expanded eklendi
                     Expanded(
                       child: Text(
                         title,
@@ -52,7 +54,7 @@ class IngredientCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8), // Metin ve etiket arasına boşluk
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -75,25 +77,27 @@ class IngredientCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // 3. Key Benefits (Maddeler)
+                // 2. Key Benefits (Maddeler - Yapay Zekadan Gelen)
                 const Text(
                   "Key Benefits",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),
-                _buildBulletPoint("Deep hydration & moisture lock"),
-                _buildBulletPoint("Anti-inflammatory properties"),
-                _buildBulletPoint("Soothes irritated skin"),
+                // Gelen listeyi döngü ile render ediyoruz
+                ...benefits
+                    .map((benefit) => _buildBulletPoint(benefit))
+                    .toList(),
+
                 const SizedBox(height: 15),
 
-                // 4. How to Use
+                // 3. How to Use (Yapay Zekadan Gelen)
                 const Text(
                   "How to Use",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  "Apply fresh gel directly to clean skin or look for products containing 95%+ aloe. Use morning and evening for best results.",
+                  usage,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 13,
@@ -102,7 +106,7 @@ class IngredientCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // 5. AI Analysis Kutusu
+                // 4. AI Analysis Kutusu (Yapay Zekadan Gelen)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -111,17 +115,17 @@ class IngredientCard extends StatelessWidget {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        "“ This plant strengthens the skin barrier and provides immediate relief for dehydrated skin areas. ”",
-                        style: TextStyle(
+                        "“ $aiAnalysis ”",
+                        style: const TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                           color: Colors.black87,
                         ),
                       ),
-                      SizedBox(height: 5),
-                      Text(
+                      const SizedBox(height: 5),
+                      const Text(
                         "- AI Analysis",
                         style: TextStyle(
                           fontSize: 12,
@@ -134,18 +138,19 @@ class IngredientCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // 6. Match Bar (Mor Çizgi)
+                // 5. Match Bar
                 Row(
                   children: [
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value: 0.95,
+                          value:
+                              0.95, // Statik veya analiz sonucuna göre set edilebilir
                           backgroundColor: Colors.grey[200],
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFF7B61FF),
-                          ), // Mor renk
+                          ),
                           minHeight: 8,
                         ),
                       ),

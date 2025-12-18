@@ -59,7 +59,7 @@ class ScanDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    "Güven Oranı: ${scanResult.benzerlikYuzdesi}",
+                    "Confidence Score: ${scanResult.benzerlikYuzdesi}",
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 14,
@@ -114,6 +114,7 @@ class ScanDetailScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  // Yeni yapıya göre List<dynamic> (Map listesi) gönderiliyor
                   _buildIngredientRow(
                     "Doğal İçerikler",
                     scanResult.dogalIcerikler,
@@ -219,9 +220,10 @@ class ScanDetailScreen extends StatelessWidget {
     );
   }
 
+  // Yeni Model Yapısına (List<dynamic>) uygun hale getirildi
   Widget _buildIngredientRow(
     String title,
-    List<String> items,
+    List<dynamic> items,
     IconData icon,
     Color color,
   ) {
@@ -242,29 +244,29 @@ class ScanDetailScreen extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: items
-              .map(
-                (item) => Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color.withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    item,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          children: items.map((item) {
+            // Her bir item bir Map olduğu için 'isim' alanını çekiyoruz
+            final String name = item is Map
+                ? (item['isim'] ?? "Unknown")
+                : item.toString();
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
-              )
-              .toList(),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );

@@ -8,11 +8,13 @@ class ScanResult {
   final String benzerlikYuzdesi;
   final List<String> belirtiler;
   final List<String> ihtiyaclar;
-  final List<String> dogalIcerikler;
-  final List<String> kimyasalIcerikler;
+  // Artık sadece String listesi değil, detaylı nesne listesi
+  final List<dynamic> dogalIcerikler;
+  final List<dynamic> kimyasalIcerikler;
   final List<String> makyajOnerileri;
   final List<String> makyajUzakDurulacaklar;
-  final String? imagePath; // <-- YENİ EKLENDİ
+  final Map<String, dynamic> rutin; // Sabah ve akşam rutinlerini içeren harita
+  final String? imagePath;
 
   ScanResult({
     this.id = '',
@@ -25,14 +27,17 @@ class ScanResult {
     required this.kimyasalIcerikler,
     required this.makyajOnerileri,
     required this.makyajUzakDurulacaklar,
-    this.imagePath, // <-- YENİ EKLENDİ
+    required this.rutin,
+    this.imagePath,
   });
 
   factory ScanResult.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    // Firestore'da 'raw_ai_output' altında sakladığımız AI yanıtını alıyoruz
     Map<String, dynamic> aiData = data['raw_ai_output'] ?? {};
 
-    String dateStr = "Unknown Date";
+    // Tarih formatlama işlemi
+    String dateStr = "Bilinmeyen Tarih";
     if (data['created_at'] != null) {
       Timestamp timestamp = data['created_at'];
       DateTime dateTime = timestamp.toDate();
@@ -46,18 +51,21 @@ class ScanResult {
       benzerlikYuzdesi: aiData['cilt_tipi_benzerlik_yuzdesi'] ?? '',
       belirtiler: List<String>.from(aiData['belirtiler'] ?? []),
       ihtiyaclar: List<String>.from(aiData['ihtiyaclar'] ?? []),
-      dogalIcerikler: List<String>.from(aiData['dogal_icerikler'] ?? []),
-      kimyasalIcerikler: List<String>.from(
+      // Yeni nesne yapısı (Map listesi) olarak alıyoruz
+      dogalIcerikler: List<dynamic>.from(aiData['dogal_icerikler'] ?? []),
+      kimyasalIcerikler: List<dynamic>.from(
         aiData['kimyasal_aktif_icerikler'] ?? [],
       ),
+      // Makyaj anahtar isimlerini şemaya göre güncelledik
       makyajOnerileri: List<String>.from(
         aiData['makyaj_kullanilmasi_gerekenler'] ?? [],
       ),
       makyajUzakDurulacaklar: List<String>.from(
         aiData['makyaj_uzak_durulmasi_gerekenler'] ?? [],
       ),
-      imagePath:
-          data['image_path'], // <-- YENİ EKLENDİ (Veritabanından çekiyoruz)
+      // Rutin alanı sabah ve akşam olarak iki alt dal barındırıyor
+      rutin: aiData['rutin'] ?? {},
+      imagePath: data['image_path'],
     );
   }
 }
