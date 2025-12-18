@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
-import '../widgets/ingredient_item_card.dart'; // Oluşturduğumuz kartı import et
+import 'package:skin_type_app/core/services/scan_service.dart';
+import 'package:skin_type_app/models/scan_model.dart';
+import '../widgets/ingredient_item_card.dart';
 
 class FavoriteIngredientsScreen extends StatefulWidget {
   const FavoriteIngredientsScreen({super.key});
@@ -11,8 +13,29 @@ class FavoriteIngredientsScreen extends StatefulWidget {
 }
 
 class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
-  // Hangi sekmenin seçili olduğunu tutan değişken
+  final ScanService _scanService = ScanService();
+  final TextEditingController _searchController = TextEditingController();
+
   bool _isChemicalSelected = true;
+  String _searchQuery = "";
+  String? _latestScanId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLatestScan();
+  }
+
+  // En son tarama ID'sini alıyoruz (favoriler tarama bazlı tutulduğu için)
+  void _loadLatestScan() {
+    _scanService.getRecentScans(1).listen((scans) {
+      if (scans.isNotEmpty && mounted) {
+        setState(() {
+          _latestScanId = scans.first.id;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,95 +43,145 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // 1. HEADER (Mor Gradient)
-          Container(
-            width: double.infinity, // Genişliği tam kaplaması için
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7B61FF), Color(0xFF9C27B0)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
+          _buildHeader(),
+          Expanded(
+            child: _latestScanId == null
+                ? const Center(child: CircularProgressIndicator())
+                : _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF7B61FF), Color(0xFF9C27B0)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back, color: Colors.white),
               ),
+              const Text(
+                "Favorite Ingredients",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => showTopMenuOverlay(context),
+                child: const Icon(Icons.menu, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          // ARAMA ÇUBUĞU
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: SafeArea(
-              // SafeArea ile çentik/saat alanından kaçınırız
-              bottom: false, // Alt kısmı etkilemesin
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 20.0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back, color: Colors.white),
-                    ),
-                    const Text(
-                      "Favorite Ingredients",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        showTopMenuOverlay(context);
-                      },
-                      child: const Icon(Icons.menu, color: Colors.white),
-                    ),
-                  ],
-                ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) =>
+                  setState(() => _searchQuery = val.toLowerCase()),
+              decoration: const InputDecoration(
+                icon: Icon(Icons.search, color: Colors.grey),
+                hintText: "Search favorites...",
+                border: InputBorder.none,
               ),
             ),
           ),
-
+          const SizedBox(height: 20),
+          // SEKME SEÇİCİ
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Row(
+              children: [
+                _buildTabButton("Chemical\nIngredients", true),
+                _buildTabButton("Natural\nIngredients", false),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // LİSTE ALANI
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  // 2. SEARCH BAR
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        icon: Icon(Icons.search, color: Colors.grey),
-                        hintText: "Search ingredients...",
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 3. TOGGLE SWITCH (Chemical vs Natural)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTabButton("Chemical\nIngredients", true),
-                        _buildTabButton("Natural\nIngredients", false),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 4. LİSTE (Seçime göre değişir)
-                  _isChemicalSelected
-                      ? _buildChemicalList()
-                      : _buildNaturalList(),
-                ],
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _scanService.getFavorites(
+                _latestScanId!,
+                _isChemicalSelected ? 'kimyasal_favoriler' : 'dogal_favoriler',
               ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final docs = snapshot.data ?? [];
+
+                // Arama Filtresi
+                final filteredDocs = docs.where((doc) {
+                  final name = (doc['isim'] ?? "").toString().toLowerCase();
+                  return name.contains(_searchQuery);
+                }).toList();
+
+                if (filteredDocs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _searchQuery.isEmpty
+                          ? "No favorites yet."
+                          : "No results found.",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: filteredDocs.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredDocs[index];
+                    return IngredientItemCard(
+                      title: item['isim'] ?? "Unknown",
+                      description:
+                          item['ai_analizi'] ?? "No analysis available.",
+                      icon: _isChemicalSelected ? Icons.science : Icons.eco,
+                      iconColor: _isChemicalSelected
+                          ? const Color(0xFF9575CD)
+                          : const Color(0xFF4CAF50),
+                      tags: List<String>.from(item['temel_faydalar'] ?? []),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -116,24 +189,15 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
     );
   }
 
-  // Tab Butonu Oluşturan Yardımcı Fonksiyon
   Widget _buildTabButton(String title, bool isChemicalBtn) {
-    // Eğer butona basılmışsa (aktifse)
     bool isActive = _isChemicalSelected == isChemicalBtn;
-
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _isChemicalSelected = isChemicalBtn;
-          });
-        },
+        onTap: () => setState(() => _isChemicalSelected = isChemicalBtn),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isActive
-                ? const Color(0xFF7B61FF)
-                : Colors.transparent, // Aktifse Mor, değilse şeffaf
+            color: isActive ? const Color(0xFF7B61FF) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isActive
                 ? [
@@ -156,122 +220,6 @@ class _FavoriteIngredientsScreenState extends State<FavoriteIngredientsScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // CHEMICAL INGREDIENTS Listesi (Image 1 Verileri)
-  Widget _buildChemicalList() {
-    return Column(
-      children: const [
-        IngredientItemCard(
-          title: "Niacinamide",
-          description:
-              "Vitamin B3 derivative that brightens skin and reduces pore appearance",
-          icon: Icons.science,
-          iconColor: Color(0xFF9575CD), // Açık Mor
-          tags: ["Brightening", "Hydration"],
-          tagColors: [
-            Color(0xFFE3F2FD),
-            Color(0xFFE8F5E9),
-          ], // Mavi, Yeşil tonları
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-        IngredientItemCard(
-          title: "Retinol",
-          description:
-              "Powerful anti-aging compound that promotes cell turnover",
-          icon: Icons.settings, // Dişli ikonu (veya benzer bir şekil)
-          iconColor: Color(0xFFFFD54F), // Sarı
-          tags: ["Anti-aging", "Texture"],
-          tagColors: [
-            Color(0xFFF3E5F5),
-            Color(0xFFFFF3E0),
-          ], // Morumsu, Turuncumsu
-          riskLevel: "Medium Risk",
-          riskColor: Colors.orange,
-        ),
-        IngredientItemCard(
-          title: "Hyaluronic Acid",
-          description:
-              "Moisture-binding molecule that holds up to 1000x its weight in water",
-          icon: Icons.water_drop,
-          iconColor: Color(0xFF42A5F5), // Mavi
-          tags: ["Hydration", "Plumping", "Sensitive-safe"],
-          tagColors: [Color(0xFFE3F2FD), Color(0xFFE0F2F1), Color(0xFFFCE4EC)],
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-        IngredientItemCard(
-          title: "Salicylic Acid",
-          description:
-              "BHA exfoliant that penetrates pores to clear acne and blackheads",
-          icon: Icons.colorize, // Tüp ikonu
-          iconColor: Color(0xFF2ECC71), // Yeşil
-          tags: ["Acne", "Exfoliating"],
-          tagColors: [Color(0xFFFFEBEE), Color(0xFFF3E5F5)],
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-      ],
-    );
-  }
-
-  // NATURAL INGREDIENTS Listesi (Image 2 Verileri)
-  Widget _buildNaturalList() {
-    return Column(
-      children: const [
-        IngredientItemCard(
-          title: "Aloe Vera",
-          description: "Soothing botanical extract that calms irritation",
-          icon: Icons.eco, // Yaprak ikonu
-          iconColor: Color(0xFF2ECC71), // Yeşil
-          tags: ["Soothing", "Hydration"],
-          tagColors: [Color(0xFFE3F2FD), Color(0xFFF3E5F5)],
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-        IngredientItemCard(
-          title: "Green Tea Extract",
-          description: "Antioxidant-rich plant compound",
-          icon: Icons.local_cafe, // Çay/Kupa ikonu
-          iconColor: Color(0xFF2ECC71),
-          tags: ["Anti-inflammatory", "Antioxidant"],
-          tagColors: [Color(0xFFE0F2F1), Color(0xFFFFF3E0)],
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-        IngredientItemCard(
-          title: "Chamomile",
-          description: "Gentle ingredient ideal for sensitive skin",
-          icon: Icons.water_drop,
-          iconColor: Color(0xFF42A5F5),
-          tags: ["Soothing", "Sensitive-safe"],
-          tagColors: [Color(0xFFE3F2FD), Color(0xFFFCE4EC)],
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-        IngredientItemCard(
-          title: "Centella Asiatica",
-          description: "Natural healer that strengthens the skin barrier",
-          icon: Icons.colorize,
-          iconColor: Color(0xFF2ECC71),
-          tags: ["Anti-inflammatory", "Nourishing"],
-          tagColors: [Color(0xFFE0F2F1), Color(0xFFE8EAF6)],
-          riskLevel: "Low Risk",
-          riskColor: Colors.green,
-        ),
-        IngredientItemCard(
-          title: "Rosehip Oil",
-          description: "Nutrient-rich oil that brightens and nourishes",
-          icon: Icons.water_drop,
-          iconColor: Color(0xFFFFD54F), // Sarı
-          tags: ["Nourishing", "Brightening"],
-          tagColors: [Color(0xFFE8EAF6), Color(0xFFFFF8E1)],
-          riskLevel: "Medium Risk",
-          riskColor: Color(0xFFA1887F), // Kahverengi ton
-        ),
-      ],
     );
   }
 }
