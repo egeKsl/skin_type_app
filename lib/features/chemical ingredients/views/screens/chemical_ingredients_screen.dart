@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
-import 'package:skin_type_app/core/services/scan_service.dart'; // Firebase Servisi
-import 'package:skin_type_app/models/scan_model.dart'; // Model dosyası
+import 'package:skin_type_app/core/services/scan_service.dart';
+import 'package:skin_type_app/models/scan_model.dart';
 import 'package:skin_type_app/features/natural ingredients/views/widgets/ai_recommendation_card.dart';
 import 'package:skin_type_app/features/natural ingredients/views/widgets/ingredient_card.dart';
 import 'package:skin_type_app/features/natural ingredients/views/widgets/usage_tip_card.dart';
@@ -17,7 +19,12 @@ class ChemicalIngredientsScreen extends StatefulWidget {
 
 class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
   final ScanService _scanService = ScanService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   List<dynamic> _kimyasalIcerikler = [];
+  Set<String> _favoritedNames = {}; // Favorilenmiş içeriklerin isimlerini tutar
+  String? _currentScanId;
   String _matchPercentage = "95%";
   bool _isLoading = true;
 
@@ -29,34 +36,28 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
     _loadFirebaseData();
   }
 
-  // Firebase'den en son tarama verisini çeken fonksiyon
   Future<void> _loadFirebaseData() async {
     try {
-      // getRecentScans(1) Stream'i bize List<ScanResult> döndürür
       _scanService
           .getRecentScans(1)
           .listen(
             (scans) {
               if (scans.isNotEmpty && mounted) {
-                // Artık elimizde ham bir Map değil, bir ScanResult nesnesi var
                 final ScanResult lastScan = scans.first;
 
                 setState(() {
-                  // Model içindeki alanlara direkt erişiyoruz
-                  // ScanResult zaten raw_ai_output'u parse edip bu listeleri doldurmuş durumda
                   _kimyasalIcerikler = lastScan.kimyasalIcerikler;
-
-                  // Yüzde bilgisini de modelden alıyoruz
+                  _currentScanId = lastScan.id; // Modelden scan ID alınıyor
                   _matchPercentage = lastScan.benzerlikYuzdesi.isNotEmpty
                       ? lastScan.benzerlikYuzdesi
                       : "95%";
-
                   _isLoading = false;
                 });
 
-                debugPrint(
-                  "✅ Firebase verisi yeni model üzerinden başarıyla yüklendi: ${lastScan.ciltTipi}",
-                );
+                // Favorileri yükle
+                _loadFavorites();
+
+                debugPrint("✅ Veri yüklendi, Scan ID: $_currentScanId");
               } else if (mounted) {
                 setState(() => _isLoading = false);
               }
@@ -69,6 +70,61 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
     } catch (e) {
       debugPrint("❌ Genel hata: $e");
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Belirli scan altındaki favorileri getiren fonksiyon
+  void _loadFavorites() {
+    final user = _auth.currentUser;
+    if (user == null || _currentScanId == null) return;
+
+    _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('scans')
+        .doc(_currentScanId)
+        .collection('kimyasal_favoriler')
+        .snapshots()
+        .listen((snapshot) {
+          if (mounted) {
+            setState(() {
+              _favoritedNames = snapshot.docs.map((doc) => doc.id).toSet();
+            });
+          }
+        });
+  }
+
+  // Favori butonuna tıklandığında çalışacak fonksiyon
+  Future<void> _toggleFavorite(dynamic item) async {
+    final user = _auth.currentUser;
+    final String ingredientName = item['isim'] ?? "Unknown";
+
+    if (user == null || _currentScanId == null) return;
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('scans')
+        .doc(_currentScanId)
+        .collection('kimyasal_favoriler')
+        .doc(ingredientName);
+
+    try {
+      if (_favoritedNames.contains(ingredientName)) {
+        await docRef.delete();
+        debugPrint("🗑️ Favorilerden silindi: $ingredientName");
+      } else {
+        await docRef.set({
+          'isim': ingredientName,
+          'temel_faydalar': item['temel_faydalar'],
+          'nasil_kullanilir': item['nasil_kullanilir'],
+          'ai_analizi': item['ai_analizi'],
+          'saved_at': FieldValue.serverTimestamp(),
+        });
+        debugPrint("⭐ Favorilere eklendi: $ingredientName");
+      }
+    } catch (e) {
+      debugPrint("❌ Favori işlemi hatası: $e");
     }
   }
 
@@ -191,12 +247,11 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                             clipBehavior: Clip.none,
                             itemCount: _kimyasalIcerikler.length,
                             itemBuilder: (context, index) {
-                              // Veritabanı şemasına göre nesneyi alıyoruz
                               final item = _kimyasalIcerikler[index];
+                              final String name = item['isim'] ?? "Unknown";
 
                               return IngredientCard(
-                                title: item['isim'] ?? "Unknown",
-                                // List<dynamic>'i List<String>'e çeviriyoruz
+                                title: name,
                                 benefits: List<String>.from(
                                   item['temel_faydalar'] ?? [],
                                 ),
@@ -207,16 +262,16 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                                     item['ai_analizi'] ??
                                     "Recommended based on scan.",
                                 matchPercentage: _matchPercentage,
+                                isFavorite: _favoritedNames.contains(name),
+                                onFavoriteToggle: () => _toggleFavorite(item),
                               );
                             },
                           ),
                   ),
 
                   const SizedBox(height: 30),
-
                   _buildSectionTitle("Safety Guide", primaryScientificColor),
                   const SizedBox(height: 15),
-
                   const UsageTipCard(
                     icon: Icons.wb_sunny,
                     iconBgColor: Color(0xFFFFCCBC),

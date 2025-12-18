@@ -8,9 +8,12 @@ class ScanResult {
   final String benzerlikYuzdesi;
   final List<String> belirtiler;
   final List<String> ihtiyaclar;
-  // Artık sadece String listesi değil, detaylı nesne listesi
+  // Detaylı nesne listeleri (isim, ai_analizi, faydalar vb. içerir)
   final List<dynamic> dogalIcerikler;
   final List<dynamic> kimyasalIcerikler;
+  // Favori olarak işaretlenmiş içeriklerin isimlerini tutan listeler
+  final List<String> dogalFavoriler;
+  final List<String> kimyasalFavoriler;
   final List<String> makyajOnerileri;
   final List<String> makyajUzakDurulacaklar;
   final Map<String, dynamic> rutin; // Sabah ve akşam rutinlerini içeren harita
@@ -25,6 +28,8 @@ class ScanResult {
     required this.ihtiyaclar,
     required this.dogalIcerikler,
     required this.kimyasalIcerikler,
+    this.dogalFavoriler = const [],
+    this.kimyasalFavoriler = const [],
     required this.makyajOnerileri,
     required this.makyajUzakDurulacaklar,
     required this.rutin,
@@ -56,7 +61,11 @@ class ScanResult {
       kimyasalIcerikler: List<dynamic>.from(
         aiData['kimyasal_aktif_icerikler'] ?? [],
       ),
-      // Makyaj anahtar isimlerini şemaya göre güncelledik
+      // Not: Alt koleksiyonlar (favoriler) bu factory içinde otomatik dolmaz.
+      // Bunları ekranda StreamBuilder veya ayrı bir servis çağrısı ile doldurmalısınız.
+      dogalFavoriler: [],
+      kimyasalFavoriler: [],
+      // Makyaj anahtar isimleri
       makyajOnerileri: List<String>.from(
         aiData['makyaj_kullanilmasi_gerekenler'] ?? [],
       ),

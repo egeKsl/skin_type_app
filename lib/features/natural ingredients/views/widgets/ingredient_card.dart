@@ -3,10 +3,12 @@ import 'package:skin_type_app/constants/app_colors.dart';
 
 class IngredientCard extends StatelessWidget {
   final String title;
-  final List<String> benefits; // Dinamik maddeler
-  final String usage; // Dinamik kullanım talimatı
-  final String aiAnalysis; // Dinamik AI analizi
+  final List<String> benefits;
+  final String usage;
+  final String aiAnalysis;
   final String matchPercentage;
+  final bool isFavorite; // Favori durumu
+  final VoidCallback onFavoriteToggle; // Favori butonu tıklama fonksiyonu
 
   const IngredientCard({
     super.key,
@@ -15,12 +17,14 @@ class IngredientCard extends StatelessWidget {
     required this.usage,
     required this.aiAnalysis,
     required this.matchPercentage,
+    this.isFavorite = false,
+    required this.onFavoriteToggle,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 320, // İçerik arttığı için genişlik biraz artırıldı
+      width: 320,
       margin: const EdgeInsets.only(right: 16, bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -33,8 +37,8 @@ class IngredientCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        // Favori butonunu sağ üste konumlandırmak için Stack kullanıldı
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -54,43 +58,43 @@ class IngredientCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.matchGreen,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        "Perfect Match",
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                    const SizedBox(width: 40), // Kalp butonu için boşluk
                   ],
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.matchGreen,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    "Perfect Match",
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 15),
 
-                // 2. Key Benefits (Maddeler - Yapay Zekadan Gelen)
+                // 2. Key Benefits
                 const Text(
                   "Key Benefits",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),
-                // Gelen listeyi döngü ile render ediyoruz
                 ...benefits
                     .map((benefit) => _buildBulletPoint(benefit))
                     .toList(),
 
                 const SizedBox(height: 15),
 
-                // 3. How to Use (Yapay Zekadan Gelen)
+                // 3. How to Use
                 const Text(
                   "How to Use",
                   style: TextStyle(fontWeight: FontWeight.bold),
@@ -106,7 +110,7 @@ class IngredientCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // 4. AI Analysis Kutusu (Yapay Zekadan Gelen)
+                // 4. AI Analysis Kutusu
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -145,8 +149,7 @@ class IngredientCard extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value:
-                              0.95, // Statik veya analiz sonucuna göre set edilebilir
+                          value: 0.95,
                           backgroundColor: Colors.grey[200],
                           valueColor: const AlwaysStoppedAnimation<Color>(
                             Color(0xFF7B61FF),
@@ -163,6 +166,20 @@ class IngredientCard extends StatelessWidget {
                   ],
                 ),
               ],
+            ),
+          ),
+
+          // FAVORİ BUTONU (KALP)
+          Positioned(
+            top: 10,
+            right: 10,
+            child: IconButton(
+              onPressed: onFavoriteToggle,
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : Colors.grey,
+                size: 28,
+              ),
             ),
           ),
         ],

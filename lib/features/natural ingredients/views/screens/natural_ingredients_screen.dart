@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/services/scan_service.dart'; // Firebase Servisi
@@ -17,7 +19,12 @@ class NaturalIngredientsScreen extends StatefulWidget {
 
 class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
   final ScanService _scanService = ScanService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   List<dynamic> _dogalIcerikler = [];
+  Set<String> _favoritedNames = {}; // Favorilenmiş doğal içeriklerin isimleri
+  String? _currentScanId;
   String _matchPercentage = "95%";
   bool _isLoading = true;
 
@@ -30,7 +37,7 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
     _loadFirebaseData();
   }
 
-  // Firebase'den en son tarama verisini çeken fonksiyon (Doğal içerikler odaklı)
+  // Firebase'den en son tarama verisini çeken fonksiyon
   Future<void> _loadFirebaseData() async {
     try {
       _scanService
@@ -41,18 +48,19 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                 final ScanResult lastScan = scans.first;
 
                 setState(() {
-                  // Model üzerinden doğrudan 'dogalIcerikler' listesini alıyoruz
                   _dogalIcerikler = lastScan.dogalIcerikler;
-
+                  _currentScanId = lastScan.id; // Modelden scan ID alınıyor
                   _matchPercentage = lastScan.benzerlikYuzdesi.isNotEmpty
                       ? lastScan.benzerlikYuzdesi
                       : "95%";
-
                   _isLoading = false;
                 });
 
+                // Doğal favorileri yükle
+                _loadFavorites();
+
                 debugPrint(
-                  "✅ Firebase doğal içerik verisi yüklendi: ${lastScan.ciltTipi}",
+                  "✅ Doğal içerikler yüklendi, Scan ID: $_currentScanId",
                 );
               } else if (mounted) {
                 setState(() => _isLoading = false);
@@ -66,6 +74,61 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
     } catch (e) {
       debugPrint("❌ Genel hata: $e");
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Belirli scan altındaki doğal favorileri getiren fonksiyon
+  void _loadFavorites() {
+    final user = _auth.currentUser;
+    if (user == null || _currentScanId == null) return;
+
+    _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('scans')
+        .doc(_currentScanId)
+        .collection('dogal_favoriler')
+        .snapshots()
+        .listen((snapshot) {
+          if (mounted) {
+            setState(() {
+              _favoritedNames = snapshot.docs.map((doc) => doc.id).toSet();
+            });
+          }
+        });
+  }
+
+  // Favori butonuna tıklandığında çalışacak fonksiyon (Doğal İçerik için)
+  Future<void> _toggleFavorite(dynamic item) async {
+    final user = _auth.currentUser;
+    final String ingredientName = item['isim'] ?? "Unknown";
+
+    if (user == null || _currentScanId == null) return;
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('scans')
+        .doc(_currentScanId)
+        .collection('dogal_favoriler')
+        .doc(ingredientName);
+
+    try {
+      if (_favoritedNames.contains(ingredientName)) {
+        await docRef.delete();
+        debugPrint("🗑️ Doğal favorilerden silindi: $ingredientName");
+      } else {
+        await docRef.set({
+          'isim': ingredientName,
+          'temel_faydalar': item['temel_faydalar'],
+          'nasil_kullanilir': item['nasil_kullanilir'],
+          'ai_analizi': item['ai_analizi'],
+          'saved_at': FieldValue.serverTimestamp(),
+        });
+        debugPrint("⭐ Doğal favorilere eklendi: $ingredientName");
+      }
+    } catch (e) {
+      debugPrint("❌ Favori işlemi hatası: $e");
     }
   }
 
@@ -191,9 +254,10 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                             itemCount: _dogalIcerikler.length,
                             itemBuilder: (context, index) {
                               final item = _dogalIcerikler[index];
+                              final String name = item['isim'] ?? "Unknown";
 
                               return IngredientCard(
-                                title: item['isim'] ?? "Unknown",
+                                title: name,
                                 benefits: List<String>.from(
                                   item['temel_faydalar'] ?? [],
                                 ),
@@ -204,6 +268,8 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                                     item['ai_analizi'] ??
                                     "Selected specifically for your skin concerns.",
                                 matchPercentage: _matchPercentage,
+                                isFavorite: _favoritedNames.contains(name),
+                                onFavoriteToggle: () => _toggleFavorite(item),
                               );
                             },
                           ),
