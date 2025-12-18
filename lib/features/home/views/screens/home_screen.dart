@@ -89,14 +89,12 @@ class _HomeScreenState extends State<HomeScreen>
     String? imagePath;
     try {
       final cameras = await availableCameras();
-
-      // Ön kamerayı bul
       final frontCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
 
-      // 2. ÖZEL KAMERA EKRANINA GİT VE SONUCU BEKLE
+      // 2. FOTOĞRAF ÇEKİMİ
       if (!mounted) return;
       imagePath = await Navigator.push(
         context,
@@ -109,19 +107,17 @@ class _HomeScreenState extends State<HomeScreen>
       return;
     }
 
-    if (imagePath == null) {
-      return;
-    }
+    if (imagePath == null) return;
 
     setState(() {
       _isLoading = true;
     });
 
-    // --- AKILLI YÜZ TESPİTİ VE KIRPMA ---
+    // --- YÜZ TESPİTİ VE TAM ÇERÇEVE KESME ---
     FaceDetector? faceDetector;
     try {
       final options = FaceDetectorOptions(
-        performanceMode: FaceDetectorMode.accurate,
+        performanceMode: FaceDetectorMode.accurate, // En hassas mod
         enableLandmarks: false,
         enableClassification: false,
       );
@@ -139,28 +135,27 @@ class _HomeScreenState extends State<HomeScreen>
         img.Image? originalImage = img.decodeImage(bytes);
 
         if (originalImage != null) {
-          // DÜZELTME: Exif kontrolünü elle yapmaya gerek yok.
-          // bakeOrientation fonksiyonu gerekliyse resmi düzeltir, değilse dokunmaz.
+          // Exif düzeltmesi
           originalImage = img.bakeOrientation(originalImage);
 
-          // Padding (Boşluk) Ekleme (%15)
-          const double paddingPercentage = 0.15;
-          final int paddingX = (boundingBox.width * paddingPercentage).toInt();
-          final int paddingY = (boundingBox.height * paddingPercentage).toInt();
+          // --- DEĞİŞİKLİK BURADA ---
+          // Padding (boşluk) hesaplamalarını tamamen sildik.
+          // Doğrudan tespit edilen yüzün koordinatlarını alıyoruz.
 
-          // DÜZELTME: min ve max artık çalışacak (import 'dart:math'; eklendiği için)
-          int x = max(0, boundingBox.left.toInt() - paddingX);
-          int y = max(0, boundingBox.top.toInt() - paddingY);
-          int w = min(
-            originalImage.width - x,
-            boundingBox.width.toInt() + (paddingX * 2),
-          );
-          int h = min(
-            originalImage.height - y,
-            boundingBox.height.toInt() + (paddingY * 2),
-          );
+          int x = boundingBox.left.toInt();
+          int y = boundingBox.top.toInt();
+          int w = boundingBox.width.toInt();
+          int h = boundingBox.height.toInt();
 
-          // Resmi kes
+          // GÜVENLİK KONTROLÜ:
+          // Bazen tespit edilen koordinatlar resmin sınırının 1-2 piksel dışına çıkabilir.
+          // Uygulamanın çökmemesi için sınırları resim boyutuna sabitliyoruz.
+          if (x < 0) x = 0;
+          if (y < 0) y = 0;
+          if (x + w > originalImage.width) w = originalImage.width - x;
+          if (y + h > originalImage.height) h = originalImage.height - y;
+
+          // Resmi tam yüz sınırlarından kes
           final img.Image croppedImage = img.copyCrop(
             originalImage,
             x: x,
@@ -172,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen>
           // Kaydet
           final String croppedPath = imagePath!.replaceFirst(
             '.jpg',
-            '_face_cropped.jpg',
+            '_face_only.jpg',
           );
           final File croppedFile = File(croppedPath)
             ..writeAsBytesSync(img.encodeJpg(croppedImage));
@@ -181,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen>
         }
       }
     } catch (e) {
-      print("Yüz tespit/kırpma hatası: $e");
+      print("Yüz işleme hatası: $e");
     } finally {
       faceDetector?.close();
     }
@@ -192,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen>
       _resultText = '';
     });
 
+    // API İSTEĞİ (Burası aynı kalıyor)
     try {
       final request = http.MultipartRequest('POST', Uri.parse(_apiUrl));
       request.files.add(
