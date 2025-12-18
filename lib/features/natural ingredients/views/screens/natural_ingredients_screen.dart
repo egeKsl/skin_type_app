@@ -162,7 +162,7 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
 
                   // YATAY LİSTE (Ingredient Cards - DİNAMİK)
                   SizedBox(
-                    height: 650,
+                    height: 550,
                     child: _isLoading
                         ? const Center(
                             child: CircularProgressIndicator(

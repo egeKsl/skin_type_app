@@ -153,7 +153,7 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                   const SizedBox(height: 15),
 
                   SizedBox(
-                    height: 650, // 🔴 Natural ile AYNI
+                    height: 550, // 🔴 Natural ile AYNI
                     child: _isLoading
                         ? Center(
                             child: CircularProgressIndicator(

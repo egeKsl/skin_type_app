@@ -135,7 +135,7 @@ class _TopMenuOverlayContent extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             MenuItemRow(
-              icon: Icons.eco_outlined,
+              icon: Icons.science,
               text: "Chemical Products",
               onTap: () {
                 onClose();

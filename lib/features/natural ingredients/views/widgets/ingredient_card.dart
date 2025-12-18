@@ -22,37 +22,17 @@ class IngredientCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, spreadRadius: 2),
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Resim Alanı
-          Stack(
-            children: [
-              Container(
-                height: 180,
-                decoration: const BoxDecoration(
-                  color: Colors.green, // Resim Placeholder
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                  image: DecorationImage(
-                    image: NetworkImage("https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&q=80&w=800"), // Örnek Aloe Vera Fotosu
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const Positioned(
-                top: 15, right: 15,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 14,
-                  child: Icon(Icons.favorite_border, size: 16, color: Colors.grey),
-                ),
-              )
-            ],
-          ),
-          
+          // 1. Resim Alanı KALDIRILDI
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -62,21 +42,44 @@ class IngredientCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    // Overflow hatasını çözmek için Expanded eklendi
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8), // Metin ve etiket arasına boşluk
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.matchGreen,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text("Perfect Match", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
-                    )
+                      child: const Text(
+                        "Perfect Match",
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 15),
-                
+
                 // 3. Key Benefits (Maddeler)
-                const Text("Key Benefits", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  "Key Benefits",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 5),
                 _buildBulletPoint("Deep hydration & moisture lock"),
                 _buildBulletPoint("Anti-inflammatory properties"),
@@ -84,11 +87,18 @@ class IngredientCard extends StatelessWidget {
                 const SizedBox(height: 15),
 
                 // 4. How to Use
-                const Text("How to Use", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  "How to Use",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 5),
                 Text(
                   "Apply fresh gel directly to clean skin or look for products containing 95%+ aloe. Use morning and evening for best results.",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.4),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 15),
 
@@ -104,10 +114,21 @@ class IngredientCard extends StatelessWidget {
                     children: const [
                       Text(
                         "“ This plant strengthens the skin barrier and provides immediate relief for dehydrated skin areas. ”",
-                        style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black87),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black87,
+                        ),
                       ),
                       SizedBox(height: 5),
-                      Text("- AI Analysis", style: TextStyle(fontSize: 12, color: Colors.cyan, fontWeight: FontWeight.bold)),
+                      Text(
+                        "- AI Analysis",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.cyan,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -122,15 +143,20 @@ class IngredientCard extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: 0.95,
                           backgroundColor: Colors.grey[200],
-                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7B61FF)), // Mor renk
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF7B61FF),
+                          ), // Mor renk
                           minHeight: 8,
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Text(matchPercentage, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      matchPercentage,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           ),
@@ -146,7 +172,12 @@ class IngredientCard extends StatelessWidget {
         children: [
           const Icon(Icons.circle, size: 6, color: Colors.cyan),
           const SizedBox(width: 8),
-          Text(text, style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: Colors.grey[700], fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
