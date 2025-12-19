@@ -1,8 +1,8 @@
-import 'dart:io'; // Dosya işlemleri için
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart'; // Fotoğraf seçimi için
+import 'package:image_picker/image_picker.dart';
 import 'package:skin_type_app/constants/profile_colors.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
 import 'package:skin_type_app/models/scan_model.dart';
@@ -19,11 +19,16 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final ScanService _scanService = ScanService();
   final ImagePicker _picker = ImagePicker();
 
+  // Color Constants from Profile Screen
+  final Color primarySlate = const Color(0xFF6B7C97);
+  final Color darkText = const Color(0xFF2D3142);
+  final Color scaffoldBg = const Color(0xFFF5F7FA);
+
   // --- State Variables ---
   String _fullName = "Not set yet";
   String _bornDate = "Not set yet";
   String _selectedGender = "";
-  String? _profileImagePath; // Fotoğrafın yerel yolunu tutar
+  String? _profileImagePath;
 
   List<String> _skinConcerns = [];
   bool _isLoading = true;
@@ -35,7 +40,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _loadAllUserData();
   }
 
-  // Fotoğraf seçme fonksiyonu
   Future<void> _pickImage() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
@@ -56,7 +60,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
   Future<void> _loadAllUserData() async {
     try {
-      // 1. Load Profile from /users/{uid}
       final profileDoc = await _scanService.getUserProfile();
       if (profileDoc != null && profileDoc.exists) {
         final data = profileDoc.data() as Map<String, dynamic>;
@@ -64,8 +67,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         setState(() {
           _fullName = data['full_name'] ?? "Not set yet";
           _selectedGender = data['gender'] ?? "";
-          _profileImagePath =
-              data['profile_image_path']; // Kayıtlı dosya yolunu al
+          _profileImagePath = data['profile_image_path'];
 
           final dynamic rawBornDate = data['born_date'];
           if (rawBornDate != null) {
@@ -81,7 +83,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         });
       }
 
-      // 2. Load Skin Concerns from latest scan
       _scanService.getRecentScans(1).listen((scans) {
         if (scans.isNotEmpty && mounted) {
           setState(() {
@@ -105,7 +106,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         fullName: _fullName == "Not set yet" ? "" : _fullName,
         bornDate: _bornDate == "Not set yet" ? "" : _bornDate,
         gender: _selectedGender,
-        profileImagePath: _profileImagePath, // Dosya yolunu gönder
+        profileImagePath: _profileImagePath,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -142,9 +143,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               child: const Text("Cancel"),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ProfileColors.primaryGreen,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: primarySlate),
               onPressed: () {
                 onSave(
                   controller.text.isEmpty ? "Not set yet" : controller.text,
@@ -162,35 +161,30 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ProfileColors.background,
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: ProfileColors.background,
+        backgroundColor: scaffoldBg,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ProfileColors.textDark),
+          icon: Icon(Icons.arrow_back, color: darkText),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "Personal Information",
           style: TextStyle(
-            color: ProfileColors.textDark,
+            color: darkText,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: ProfileColors.primaryGreen,
-              ),
-            )
+          ? Center(child: CircularProgressIndicator(color: primarySlate))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  // Profil Resmi Alanı (Düzenlendi)
                   GestureDetector(
                     onTap: _pickImage,
                     child: Center(
@@ -204,8 +198,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             ),
                             child: CircleAvatar(
                               radius: 50,
-                              backgroundColor: Colors.grey[200],
-                              // Dosya yolu varsa ve dosya yerinde duruyorsa göster
+                              backgroundColor: const Color(0xFFF0F4F8),
                               backgroundImage:
                                   (_profileImagePath != null &&
                                       File(_profileImagePath!).existsSync())
@@ -214,10 +207,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               child:
                                   (_profileImagePath == null ||
                                       !File(_profileImagePath!).existsSync())
-                                  ? const Icon(
+                                  ? Icon(
                                       Icons.person,
                                       size: 50,
-                                      color: Colors.grey,
+                                      color: primarySlate.withOpacity(0.5),
                                     )
                                   : null,
                             ),
@@ -228,7 +221,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: ProfileColors.primaryGreen,
+                                color: primarySlate,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white,
@@ -247,7 +240,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     ),
                   ),
                   const SizedBox(height: 30),
-
                   InteractiveField(
                     label: "Full Name",
                     value: _fullName,
@@ -258,7 +250,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     ),
                   ),
                   const SizedBox(height: 15),
-
                   InteractiveField(
                     label: "Date of Birth",
                     value: _bornDate,
@@ -270,13 +261,12 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     ),
                   ),
                   const SizedBox(height: 25),
-
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       "Gender (Optional)",
                       style: TextStyle(
-                        color: ProfileColors.textLight,
+                        color: Colors.grey.shade600,
                         fontSize: 14,
                       ),
                     ),
@@ -305,12 +295,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     }).toList(),
                   ),
                   const SizedBox(height: 25),
-
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: ProfileColors.cardWhite,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(15),
                       boxShadow: [
                         BoxShadow(
@@ -323,10 +312,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           "Skin Concerns (From Latest Analysis)",
                           style: TextStyle(
-                            color: ProfileColors.textLight,
+                            color: Colors.grey.shade600,
                             fontSize: 14,
                           ),
                         ),
@@ -344,10 +333,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                     ),
                   ),
                   const SizedBox(height: 25),
-
                   const InfoBoxWidget(),
                   const SizedBox(height: 30),
-
                   Row(
                     children: [
                       Expanded(
@@ -360,10 +347,10 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             "Cancel",
                             style: TextStyle(
-                              color: ProfileColors.textDark,
+                              color: darkText,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -374,7 +361,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                         child: ElevatedButton(
                           onPressed: _isSaving ? null : _handleSave,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: ProfileColors.primaryGreen,
+                            backgroundColor: primarySlate,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

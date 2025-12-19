@@ -27,7 +27,7 @@ class ProfileImageWidget extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ProfileColors.primaryGreen,
+                color: const Color.fromRGBO(107, 124, 151, 1),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
               ),
@@ -104,7 +104,7 @@ class InteractiveField extends StatelessWidget {
                 ),
                 Icon(
                   icon ?? Icons.edit,
-                  color: ProfileColors.primaryGreen,
+                  color: const Color.fromRGBO(107, 124, 151, 1),
                   size: 20,
                 ),
               ],
@@ -137,12 +137,12 @@ class SelectableButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? ProfileColors.primaryGreen.withOpacity(0.1)
+              ? const Color.fromRGBO(107, 124, 151, 1).withOpacity(0.1)
               : ProfileColors.cardWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? ProfileColors.primaryGreen
+                ? const Color.fromRGBO(107, 124, 151, 1)
                 : ProfileColors.borderGrey,
             width: isSelected ? 2 : 1,
           ),
@@ -151,7 +151,9 @@ class SelectableButton extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: isSelected ? ProfileColors.primaryGreen : Colors.grey,
+              color: isSelected
+                  ? const Color.fromRGBO(107, 124, 151, 1)
+                  : Colors.grey,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -178,7 +180,7 @@ class ReadOnlyListItem extends StatelessWidget {
             width: 8,
             height: 8,
             decoration: const BoxDecoration(
-              color: ProfileColors.primaryGreen,
+              color: const Color.fromRGBO(107, 124, 151, 1),
               shape: BoxShape.circle,
             ),
           ),
@@ -213,7 +215,10 @@ class InfoBoxWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: ProfileColors.primaryGreen),
+          const Icon(
+            Icons.info_outline,
+            color: Color.fromRGBO(107, 124, 151, 1),
+          ),
           const SizedBox(width: 15),
           Expanded(
             child: Text(
