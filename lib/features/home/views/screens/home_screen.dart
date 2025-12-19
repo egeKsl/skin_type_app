@@ -13,6 +13,7 @@ import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routi
 import 'package:skin_type_app/features/face scan/views/screens/face_scan_screen.dart';
 import 'package:skin_type_app/features/natural%20ingredients/views/screens/natural_ingredients_screen.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
+import 'package:skin_type_app/models/scan_model.dart';
 import 'package:camera/camera.dart';
 import '../widgets/product_card.dart';
 import '../widgets/info_section_card.dart';
@@ -28,25 +29,77 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final String _apiUrl =
       'https://backend-server-skin-app--vertex-api-c4832.us-central1.hosted.app/analyze-skin';
+  final ScanService _scanService = ScanService();
   File? _selectedImage;
   String _resultText = '';
   bool _isLoading = false;
   List<String> _belirtiler = [];
   List<String> _ihtiyaclar = [];
-  // Yeni nesne yapısını desteklemek için List<dynamic> yapıldı
-  List<dynamic> _kimyasalIcerikler = [];
+  // Merged dynamic list for both chemical and natural ingredients
+  List<Map<String, dynamic>> _allIngredients = [];
   String _cilt_tipi = '';
   String _cilt_tipi_benzerlik_yuzdesi = '';
 
   @override
   void initState() {
     super.initState();
-    _loadDatabase();
+    _loadFirebaseData();
+  }
+
+  // Fetching data from Firebase Firestore instead of local database
+  void _loadFirebaseData() {
+    _scanService
+        .getRecentScans(1)
+        .listen(
+          (scans) {
+            if (scans.isNotEmpty && mounted) {
+              final ScanResult lastScan = scans.first;
+              setState(() {
+                _belirtiler = lastScan.belirtiler;
+                _ihtiyaclar = lastScan.ihtiyaclar;
+                _cilt_tipi = lastScan.ciltTipi;
+                _cilt_tipi_benzerlik_yuzdesi = lastScan.benzerlikYuzdesi;
+
+                // Combining Chemical and Natural ingredients for the Recommended section
+                _allIngredients = [];
+
+                for (var item in lastScan.kimyasalIcerikler) {
+                  _allIngredients.add({
+                    ...item as Map<String, dynamic>,
+                    'type': 'Active Ingredient',
+                  });
+                }
+
+                for (var item in lastScan.dogalIcerikler) {
+                  _allIngredients.add({
+                    ...item as Map<String, dynamic>,
+                    'type': 'Natural Ingredient',
+                  });
+                }
+
+                _isLoading = false;
+              });
+
+              // Load the image file if path exists
+              if (lastScan.imagePath != null) {
+                File imageFile = File(lastScan.imagePath!);
+                if (imageFile.existsSync()) {
+                  setState(() => _selectedImage = imageFile);
+                }
+              }
+
+              print("✅ Firebase data synchronized successfully");
+            }
+          },
+          onError: (error) {
+            print("❌ Error fetching Firebase data: $error");
+          },
+        );
   }
 
   Future<void> _loadDatabase() async {
+    // This method is kept for image loading but ingredient logic moved to Firebase
     final storage = SkinAnalysisStorage();
-    final loadedData = await storage.loadAnalysisData();
     String? savedImagePath = await storage.loadFaceImagePath();
 
     if (savedImagePath != null) {
@@ -57,26 +110,7 @@ class _HomeScreenState extends State<HomeScreen>
         setState(() {
           _selectedImage = imageFile;
         });
-        print("✅ Kayıtlı resim yüklendi: $savedImagePath");
-      } else {
-        print("⚠️ Resim dosyası bulunamadı, kayıt temizleniyor");
-        await storage.saveFaceImagePath(null);
-      }
-    }
-
-    if (loadedData != null) {
-      if (mounted) {
-        setState(() {
-          _belirtiler = List<String>.from(loadedData['belirtiler'] ?? []);
-          _ihtiyaclar = List<String>.from(loadedData['ihtiyaclar'] ?? []);
-          _cilt_tipi = loadedData['cilt_tipi'] ?? "Bilinmiyor";
-          _cilt_tipi_benzerlik_yuzdesi =
-              loadedData['cilt_tipi_benzerlik_yuzdesi'] ?? "Bilinmiyor";
-          // Dinamik listeyi (map listesi) doğru şekilde yüklüyoruz
-          _kimyasalIcerikler = List<dynamic>.from(
-            loadedData['kimyasal_aktif_icerikler'] ?? [],
-          );
-        });
+        print("✅ Saved image loaded: $savedImagePath");
       }
     }
   }
@@ -102,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       );
     } catch (e) {
-      print("Kamera hatası: $e");
+      print("Camera error: $e");
       return;
     }
 
@@ -164,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen>
         }
       }
     } catch (e) {
-      print("Yüz işleme hatası: $e");
+      print("Face processing error: $e");
     } finally {
       faceDetector?.close();
     }
@@ -194,20 +228,18 @@ class _HomeScreenState extends State<HomeScreen>
 
         await storage.saveAnalysisData(apiResponseData);
 
-        final scanService = ScanService();
-        await scanService.saveScan(
+        await _scanService.saveScan(
           apiResponse: apiResponseData,
           imagePath: _selectedImage!.path,
         );
 
         await storage.deleteRoutineStatus();
         await storage.saveFaceImagePath(_selectedImage!.path);
-        await _loadDatabase();
       } else {
-        print("API HATA: ${response.statusCode} | $responseBody");
+        print("API ERROR: ${response.statusCode} | $responseBody");
       }
     } catch (error) {
-      print("Hata oluştu: $error");
+      print("Occurred error: $error");
     } finally {
       if (mounted) {
         setState(() {
@@ -307,61 +339,42 @@ class _HomeScreenState extends State<HomeScreen>
                   const SizedBox(height: 25),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
+                    children: const [
+                      Text(
                         "Recommended For You",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const NaturalIngredientsScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "See All",
-                          style: TextStyle(
-                            color: AppColors.primaryPurple,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      // "See All" removed as requested
                     ],
                   ),
                   const SizedBox(height: 15),
                   SizedBox(
-                    height:
-                        400, // İçerik zenginleştiği için yükseklik artırıldı
-                    child: _kimyasalIcerikler.isEmpty
+                    height: 260, // Height adjusted for text-only cards
+                    child: _allIngredients.isEmpty
                         ? const Center(child: Text("data is being waiting..."))
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: _kimyasalIcerikler.length,
+                            itemCount: _allIngredients.length,
                             itemBuilder: (context, index) {
-                              // Artık her bir öğe bir Map formatındadır
-                              final item = _kimyasalIcerikler[index];
-
-                              // Map içinden değerleri çekiyoruz
+                              final item = _allIngredients[index];
                               final String isim =
                                   item['isim'] ?? "Unknown ingredient";
                               final String analiz =
                                   item['ai_analizi'] ??
-                                  "According to your skin,these ingredients has been suggested to you.";
+                                  "Suggested based on your skin type.";
+                              final String type = item['type'] ?? "Ingredient";
 
                               return ProductCard(
                                 title: isim,
-                                subtitle: "Active Ingredient",
-                                tagColor: Colors.blueAccent,
+                                subtitle: type,
+                                tagColor: type == 'Active Ingredient'
+                                    ? Colors.blueAccent
+                                    : Colors.green,
                                 tagText: "suggested for you",
-                                desc:
-                                    analiz, // AI analizi açıklamaya yerleştirildi
+                                desc: analiz,
                               );
                             },
                           ),
