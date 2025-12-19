@@ -6,16 +6,13 @@ class ScanService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Veriyi Kaydetme
+  // 1. Tarama Sonucunu Kaydetme
   Future<void> saveScan({
     required Map<String, dynamic> apiResponse,
     required String imagePath,
   }) async {
     final user = _auth.currentUser;
-
-    if (user == null) {
-      throw Exception("User not authenticated");
-    }
+    if (user == null) throw Exception("Kullanıcı kimliği doğrulanmadı");
 
     final scanRef = _firestore
         .collection('users')
@@ -31,13 +28,34 @@ class ScanService {
     });
   }
 
-  // 2. Tüm Taramaları Çekme - Stream
+  // 2. Kullanıcı Profil Bilgilerini Güncelleme (born_date olarak güncellendi)
+  Future<void> updateUserProfile({
+    required String fullName,
+    required String bornDate,
+    required String gender,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'full_name': fullName,
+      'born_date': bornDate, // Veritabanındaki mevcut alan ismiyle eşleşti
+      'gender': gender,
+      'updated_at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  // 3. Kullanıcı Profil Bilgilerini Getirme
+  Future<DocumentSnapshot?> getUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return await _firestore.collection('users').doc(user.uid).get();
+  }
+
+  // 4. Tüm Taramaları Getir - Stream
   Stream<List<ScanResult>> getScans() {
     final user = _auth.currentUser;
-
-    if (user == null) {
-      return const Stream.empty();
-    }
+    if (user == null) return const Stream.empty();
 
     return _firestore
         .collection('users')
@@ -46,13 +64,13 @@ class ScanService {
         .orderBy('created_at', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            return ScanResult.fromFirestore(doc);
-          }).toList();
+          return snapshot.docs
+              .map((doc) => ScanResult.fromFirestore(doc))
+              .toList();
         });
   }
 
-  // 3. Belirli bir scan altındaki favorileri getiren stream
+  // 5. Belirli Bir Tarama Altındaki Favorileri Getir - Stream
   Stream<List<Map<String, dynamic>>> getFavorites(
     String scanId,
     String collectionName,
@@ -65,21 +83,16 @@ class ScanService {
         .doc(user.uid)
         .collection('scans')
         .doc(scanId)
-        .collection(
-          collectionName,
-        ) // 'kimyasal_favoriler' veya 'dogal_favoriler'
+        .collection(collectionName)
         .orderBy('saved_at', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // 4. En son taramayı getiren metod (Limitli)
+  // 6. Son Taramaları Getir (Limitli)
   Stream<List<ScanResult>> getRecentScans(int limit) {
     final user = _auth.currentUser;
-
-    if (user == null) {
-      return const Stream.empty();
-    }
+    if (user == null) return const Stream.empty();
 
     return _firestore
         .collection('users')
@@ -89,14 +102,13 @@ class ScanService {
         .limit(limit)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            return ScanResult.fromFirestore(doc);
-          }).toList();
+          return snapshot.docs
+              .map((doc) => ScanResult.fromFirestore(doc))
+              .toList();
         });
   }
 
-  // 5. Favorilerden Ürün Kaldırma (Yeni Eklendi)
-  // Bu metod çağrıldığında Firestore'daki doküman silinir ve anlık dinleyiciler (stream) sayesinde UI otomatik güncellenir.
+  // 7. Favorilerden Ürün Kaldırma
   Future<void> removeFavorite({
     required String scanId,
     required String collectionName,
@@ -114,7 +126,6 @@ class ScanService {
           .collection(collectionName)
           .doc(ingredientName)
           .delete();
-
       print("✅ $ingredientName favorilerden kaldırıldı.");
     } catch (e) {
       print("❌ Favori kaldırma hatası: $e");

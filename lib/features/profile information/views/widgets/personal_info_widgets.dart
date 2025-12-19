@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skin_type_app/constants/profile_colors.dart';
 
-// 1. PROFIL RESMİ WIDGET'I
+// 1. PROFILE IMAGE WIDGET
 class ProfileImageWidget extends StatelessWidget {
   const ProfileImageWidget({super.key});
 
@@ -44,12 +44,12 @@ class ProfileImageWidget extends StatelessWidget {
   }
 }
 
-// 2. ETKİLEŞİMLİ ALAN (İsim, Doğum Tarihi vb. - Tıklanabilir yapıldı)
+// 2. INTERACTIVE FIELD
 class InteractiveField extends StatelessWidget {
   final String label;
   final String value;
   final IconData? icon;
-  final VoidCallback? onTap; // Tıklama özelliği eklendi
+  final VoidCallback? onTap;
 
   const InteractiveField({
     super.key,
@@ -61,6 +61,9 @@ class InteractiveField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If value is "Not set yet", we show it in a lighter color
+    bool isPlaceholder = value == "Not set yet";
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -93,13 +96,12 @@ class InteractiveField extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: ProfileColors.textDark,
+                  style: TextStyle(
+                    color: isPlaceholder ? Colors.grey : ProfileColors.textDark,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                // Eğer icon varsa onu göster, yoksa düzenleme kalemi göster
                 Icon(
                   icon ?? Icons.edit,
                   color: ProfileColors.primaryGreen,
@@ -114,7 +116,7 @@ class InteractiveField extends StatelessWidget {
   }
 }
 
-// 3. SEÇİLEBİLİR BUTON (Cinsiyet Seçimi İçin)
+// 3. SELECTABLE BUTTON (Gender)
 class SelectableButton extends StatelessWidget {
   final String text;
   final bool isSelected;
@@ -134,7 +136,9 @@ class SelectableButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: ProfileColors.cardWhite,
+          color: isSelected
+              ? ProfileColors.primaryGreen.withOpacity(0.1)
+              : ProfileColors.cardWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
@@ -157,71 +161,9 @@ class SelectableButton extends StatelessWidget {
   }
 }
 
-// 4. CİLT TİPİ KARTI (Tasarım uzun metinlere uygun hale getirildi)
-class SkinTypeCard extends StatelessWidget {
-  final String text;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const SkinTypeCard({
-    super.key,
-    required this.text,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity, // Tam genişlik
-        margin: const EdgeInsets.only(bottom: 10), // Alt boşluk
-        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-        decoration: BoxDecoration(
-          color: ProfileColors.cardWhite,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? ProfileColors.primaryGreen
-                : ProfileColors.borderGrey,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            // Seçili ise dolu daire, değilse boş daire (Radio button hissi)
-            Icon(
-              isSelected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_unchecked,
-              color: isSelected ? ProfileColors.primaryGreen : Colors.grey,
-              size: 20,
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: isSelected
-                      ? ProfileColors.primaryGreen
-                      : Colors.grey[700],
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// 5. SALT OKUNUR LISTE ELEMANI (Concerns için Checkbox yerine nokta)
+// 4. READ ONLY LIST ITEM
 class ReadOnlyListItem extends StatelessWidget {
   final String label;
-
   const ReadOnlyListItem({super.key, required this.label});
 
   @override
@@ -231,7 +173,6 @@ class ReadOnlyListItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Yeşil nokta
           Container(
             margin: const EdgeInsets.only(top: 6),
             width: 8,
@@ -247,7 +188,7 @@ class ReadOnlyListItem extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: ProfileColors.textDark,
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -258,7 +199,7 @@ class ReadOnlyListItem extends StatelessWidget {
   }
 }
 
-// 6. BİLGİ KUTUSU
+// 5. INFO BOX WIDGET
 class InfoBoxWidget extends StatelessWidget {
   const InfoBoxWidget({super.key});
 
@@ -276,10 +217,10 @@ class InfoBoxWidget extends StatelessWidget {
           const SizedBox(width: 15),
           Expanded(
             child: Text(
-              "Your personal information helps us create a customized skincare routine tailored to your unique needs. All data is encrypted and never shared.",
+              "Your information is stored securely to provide a better skincare experience. You can update it anytime.",
               style: TextStyle(
                 color: Colors.grey[700],
-                fontSize: 12,
+                fontSize: 11,
                 height: 1.4,
               ),
             ),
