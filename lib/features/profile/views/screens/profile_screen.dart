@@ -106,6 +106,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return false;
   }
 
+  // Logout Function with Explicit Navigation
+  Future<void> _handleLogout() async {
+    try {
+      // 1. Sign out from Firebase
+      await _auth.signOut();
+
+      // 2. Explicitly navigate to login/auth screen and clear navigation history
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
+      }
+    } catch (e) {
+      debugPrint("❌ Logout error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error signing out. Please try again.")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,7 +135,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
-              // Kaydırma pozisyonunu korumak için key ekleyebiliriz
               key: const PageStorageKey('profile_scroll'),
               child: Column(
                 children: [
@@ -149,7 +168,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Scan History Section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
@@ -211,7 +229,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                   const SectionHeader(title: "Settings"),
 
-                  // 🔥 FIX: StatefulBuilder kullanarak sadece bu kısmı rebuild ediyoruz
                   StatefulBuilder(
                     builder: (context, setLocalState) {
                       return Padding(
@@ -243,11 +260,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onChanged: (val) async {
                                 bool isGranted =
                                     await _requestNotificationPermission(val);
-                                // Sadece bu widget'ı günceller, sayfa en başa atmaz
                                 setLocalState(() {
                                   _isNotificationActive = isGranted;
                                 });
-                                // Parent state'i sessizce güncelle (navigasyon vb. durumlar için)
                                 _isNotificationActive = isGranted;
                               },
                               activeColor: const Color(0xFFD1E9F6),
@@ -270,10 +285,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title: "Language",
                     value: "English",
                   ),
-                  const ProfileListTile(
-                    icon: Icons.logout,
-                    title: "Log Out",
-                    value: "",
+
+                  // LOGOUT BUTTON IMPLEMENTATION
+                  GestureDetector(
+                    onTap: _handleLogout,
+                    child: const ProfileListTile(
+                      icon: Icons.logout,
+                      title: "Log Out",
+                      value: "",
+                    ),
                   ),
 
                   const SizedBox(height: 40),
