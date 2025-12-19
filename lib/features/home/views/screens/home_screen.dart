@@ -1,17 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:image/image.dart' as img;
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Dinamik güncellemeler için eklendi
+import 'package:cloud_firestore/cloud_firestore.dart'; // Dinamik güncellemeler için eklendi
 import 'package:skin_type_app/constants/app_colors.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/database/data_service.dart';
 import 'package:skin_type_app/features/Weekly Routine/views/screens/weekly_routine_screen.dart';
 import 'package:skin_type_app/features/face scan/views/screens/face_scan_screen.dart';
-import 'package:skin_type_app/features/natural%20ingredients/views/screens/natural_ingredients_screen.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
 import 'package:skin_type_app/models/scan_model.dart';
 import 'package:camera/camera.dart';
@@ -35,18 +34,46 @@ class _HomeScreenState extends State<HomeScreen>
   bool _isLoading = false;
   List<String> _belirtiler = [];
   List<String> _ihtiyaclar = [];
-  // Merged dynamic list for both chemical and natural ingredients
   List<Map<String, dynamic>> _allIngredients = [];
   String _cilt_tipi = '';
   String _cilt_tipi_benzerlik_yuzdesi = '';
+
+  // Profil fotoğrafı için değişken
+  String? _profileImagePath;
 
   @override
   void initState() {
     super.initState();
     _loadFirebaseData();
+    _listenUserProfileChanges(); // Tek seferlik yükleme yerine dinleyiciyi başlat
   }
 
-  // Fetching data from Firebase Firestore instead of local database
+  // Firestore'dan profil dökümanını canlı olarak dinler
+  // Bu sayede profil fotosu değiştiği anda ana ekrana yansır
+  void _listenUserProfileChanges() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen(
+          (doc) {
+            if (doc.exists && mounted) {
+              final data = doc.data() as Map<String, dynamic>;
+              setState(() {
+                _profileImagePath = data['profile_image_path'];
+              });
+              print("✅ Profile image updated reactively: $_profileImagePath");
+            }
+          },
+          onError: (e) {
+            print("❌ Error listening to profile changes: $e");
+          },
+        );
+  }
+
   void _loadFirebaseData() {
     _scanService
         .getRecentScans(1)
@@ -60,16 +87,13 @@ class _HomeScreenState extends State<HomeScreen>
                 _cilt_tipi = lastScan.ciltTipi;
                 _cilt_tipi_benzerlik_yuzdesi = lastScan.benzerlikYuzdesi;
 
-                // Combining Chemical and Natural ingredients for the Recommended section
                 _allIngredients = [];
-
                 for (var item in lastScan.kimyasalIcerikler) {
                   _allIngredients.add({
                     ...item as Map<String, dynamic>,
                     'type': 'Active Ingredient',
                   });
                 }
-
                 for (var item in lastScan.dogalIcerikler) {
                   _allIngredients.add({
                     ...item as Map<String, dynamic>,
@@ -79,46 +103,17 @@ class _HomeScreenState extends State<HomeScreen>
 
                 _isLoading = false;
               });
-
-              // Load the image file if path exists
-              if (lastScan.imagePath != null) {
-                File imageFile = File(lastScan.imagePath!);
-                if (imageFile.existsSync()) {
-                  setState(() => _selectedImage = imageFile);
-                }
-              }
-
-              print("✅ Firebase data synchronized successfully");
+              print("✅ Firebase scan data synchronized");
             }
           },
           onError: (error) {
-            print("❌ Error fetching Firebase data: $error");
+            print("❌ Error fetching scan data: $error");
           },
         );
   }
 
-  Future<void> _loadDatabase() async {
-    // This method is kept for image loading but ingredient logic moved to Firebase
-    final storage = SkinAnalysisStorage();
-    String? savedImagePath = await storage.loadFaceImagePath();
-
-    if (savedImagePath != null) {
-      File imageFile = File(savedImagePath);
-      bool fileExists = await imageFile.exists();
-
-      if (fileExists && mounted) {
-        setState(() {
-          _selectedImage = imageFile;
-        });
-        print("✅ Saved image loaded: $savedImagePath");
-      }
-    }
-  }
-
   Future<void> _pickImageAndSend() async {
-    if (_isLoading) {
-      return;
-    }
+    if (_isLoading) return;
 
     String? imagePath;
     try {
@@ -193,7 +188,6 @@ class _HomeScreenState extends State<HomeScreen>
           );
           final File croppedFile = File(croppedPath)
             ..writeAsBytesSync(img.encodeJpg(croppedImage));
-
           imagePath = croppedFile.path;
         }
       }
@@ -205,7 +199,6 @@ class _HomeScreenState extends State<HomeScreen>
 
     setState(() {
       _selectedImage = File(imagePath!);
-      _resultText = '';
     });
 
     try {
@@ -227,7 +220,6 @@ class _HomeScreenState extends State<HomeScreen>
         final storage = SkinAnalysisStorage();
 
         await storage.saveAnalysisData(apiResponseData);
-
         await _scanService.saveScan(
           apiResponse: apiResponseData,
           imagePath: _selectedImage!.path,
@@ -347,12 +339,11 @@ class _HomeScreenState extends State<HomeScreen>
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // "See All" removed as requested
                     ],
                   ),
                   const SizedBox(height: 15),
                   SizedBox(
-                    height: 260, // Height adjusted for text-only cards
+                    height: 260,
                     child: _allIngredients.isEmpty
                         ? const Center(child: Text("data is being waiting..."))
                         : ListView.builder(
@@ -464,9 +455,7 @@ class _HomeScreenState extends State<HomeScreen>
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    showTopMenuOverlay(context);
-                  },
+                  onTap: () => showTopMenuOverlay(context),
                   child: const Icon(Icons.menu, color: Colors.black),
                 ),
               ],
@@ -487,8 +476,14 @@ class _HomeScreenState extends State<HomeScreen>
                       width: 150,
                       height: 150,
                       color: Colors.grey[300],
-                      child: _selectedImage != null
-                          ? Image.file(_selectedImage!, fit: BoxFit.cover)
+                      // DEĞİŞİKLİK: Burada artık profil fotosu canlı (reactive) olarak dinleniyor
+                      child:
+                          (_profileImagePath != null &&
+                              File(_profileImagePath!).existsSync())
+                          ? Image.file(
+                              File(_profileImagePath!),
+                              fit: BoxFit.cover,
+                            )
                           : const Icon(
                               Icons.face,
                               size: 80,
@@ -527,11 +522,7 @@ class _HomeScreenState extends State<HomeScreen>
                         if (_isLoading) const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            _isLoading
-                                ? 'Analyzing...'
-                                : (_resultText.isNotEmpty
-                                      ? _resultText
-                                      : 'Click to analysis'),
+                            _isLoading ? 'Analyzing...' : 'Click to analysis',
                             style: const TextStyle(
                               color: AppColors.primaryPurple,
                               fontWeight: FontWeight.bold,

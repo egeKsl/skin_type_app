@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:skin_type_app/constants/profile_colors.dart';
+//import 'package:skin_type_app/constants/profile_colors.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
-import 'package:skin_type_app/models/scan_model.dart';
+//import 'package:skin_type_app/models/scan_model.dart';
 import '../widgets/personal_info_widgets.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final ImagePicker _picker = ImagePicker();
 
   // Color Constants from Profile Screen
-  final Color primarySlate = const Color(0xFF6B7C97);
+  final Color primarySlate = const Color.fromRGBO(107, 124, 151, 1);
   final Color darkText = const Color(0xFF2D3142);
   final Color scaffoldBg = const Color(0xFFF5F7FA);
 
