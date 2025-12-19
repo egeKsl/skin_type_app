@@ -7,6 +7,62 @@ import 'package:skin_type_app/models/scan_model.dart';
 class ScanHistoryScreen extends StatelessWidget {
   const ScanHistoryScreen({super.key});
 
+  // Helper function to show deletion confirmation dialog
+  Future<void> _showDeleteConfirmation(
+    BuildContext context,
+    ScanService service,
+    String scanId,
+  ) async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Record"),
+          content: const Text(
+            "Are you sure you want to delete this scan history? This action cannot be undone.",
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("No", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(context); // Close dialog
+                try {
+                  await service.deleteScan(scanId);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Record deleted successfully"),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Failed to delete record")),
+                    );
+                  }
+                }
+              },
+              child: const Text("Yes", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ScanService _scanService = ScanService();
@@ -49,19 +105,19 @@ class ScanHistoryScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. Dinamik Liste (StreamBuilder)
+          // 2. Dynamic List (StreamBuilder)
           Expanded(
             child: StreamBuilder<List<ScanResult>>(
               stream: _scanService.getScans(),
               builder: (context, snapshot) {
-                // Hata Durumu
+                // Error State
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text("Bir hata oluştu: ${snapshot.error}"),
+                    child: Text("An error occurred: ${snapshot.error}"),
                   );
                 }
 
-                // Yükleniyor Durumu
+                // Loading State
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                     child: CircularProgressIndicator(color: Color(0xFF6B7C97)),
@@ -70,23 +126,23 @@ class ScanHistoryScreen extends StatelessWidget {
 
                 final historyData = snapshot.data ?? [];
 
-                // Veri Yoksa
+                // Empty State
                 if (historyData.isEmpty) {
                   return const Center(
                     child: Text(
-                      "Henüz hiç tarama yapılmamış.",
+                      "No scan history found.",
                       style: TextStyle(color: Colors.grey, fontSize: 16),
                     ),
                   );
                 }
 
-                // Liste Varsa
+                // List View
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: historyData.length,
                   itemBuilder: (context, index) {
                     final scan = historyData[index];
-                    return _buildHistoryCard(context, scan);
+                    return _buildHistoryCard(context, _scanService, scan);
                   },
                 );
               },
@@ -97,7 +153,11 @@ class ScanHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, ScanResult scan) {
+  Widget _buildHistoryCard(
+    BuildContext context,
+    ScanService service,
+    ScanResult scan,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -107,6 +167,8 @@ class ScanHistoryScreen extends StatelessWidget {
           ),
         );
       },
+      // LONG PRESS TO DELETE
+      onLongPress: () => _showDeleteConfirmation(context, service, scan.id),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
@@ -123,19 +185,17 @@ class ScanHistoryScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // --- GÜNCELLENEN KISIM BAŞLANGIÇ ---
-            // Resim Alanı
+            // Image Area
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 width: 60,
                 height: 60,
-                color: const Color(0xFFF0F4F8), // Resim yoksa arka plan rengi
+                color: const Color(0xFFF0F4F8),
                 child: (scan.imagePath != null && scan.imagePath!.isNotEmpty)
                     ? Image.file(
-                        File(scan.imagePath!), // Telefon hafızasından okur
+                        File(scan.imagePath!),
                         fit: BoxFit.cover,
-                        // Eğer dosya silinmişse veya hata verirse ikon göster:
                         errorBuilder: (context, error, stackTrace) {
                           return const Icon(
                             Icons.broken_image_outlined,
@@ -150,11 +210,9 @@ class ScanHistoryScreen extends StatelessWidget {
                       ),
               ),
             ),
-
-            // --- GÜNCELLENEN KISIM BİTİŞ ---
             const SizedBox(width: 16),
 
-            // Bilgiler
+            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,7 +232,7 @@ class ScanHistoryScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Yüzde Chip
+                  // Match Chip
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,

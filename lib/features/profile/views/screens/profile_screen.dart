@@ -157,14 +157,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       value: _email,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => _navigateToPersonalInfo(context),
-                    child: ProfileListTile(
-                      icon: Icons.cake,
-                      title: "Age",
-                      value: _age,
-                    ),
-                  ),
 
                   const SizedBox(height: 20),
 

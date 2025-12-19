@@ -1,18 +1,20 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:skin_type_app/models/scan_model.dart';
+import 'package:intl/intl.dart';
 
 class ScanService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // 1. Tarama Sonucunu Kaydetme
+  // 1. Save Scan Result to Firestore
   Future<void> saveScan({
     required Map<String, dynamic> apiResponse,
     required String imagePath,
   }) async {
     final user = _auth.currentUser;
-    if (user == null) throw Exception("Kullanıcı kimliği doğrulanmadı");
+    if (user == null) throw Exception("User not authenticated");
 
     final scanRef = _firestore
         .collection('users')
@@ -28,7 +30,7 @@ class ScanService {
     });
   }
 
-  // 2. Kullanıcı Profil Bilgilerini Güncelleme (profileImagePath eklendi)
+  // 2. Update User Profile Information
   Future<void> updateUserProfile({
     required String fullName,
     required String bornDate,
@@ -38,23 +40,56 @@ class ScanService {
     final user = _auth.currentUser;
     if (user == null) return;
 
+    // Ensures born_date is stored as a Timestamp to prevent loading errors
+    dynamic bornDateValue;
+    try {
+      DateTime dateTime = DateFormat('MMMM dd, yyyy').parse(bornDate);
+      bornDateValue = Timestamp.fromDate(dateTime);
+    } catch (e) {
+      bornDateValue = bornDate;
+    }
+
     await _firestore.collection('users').doc(user.uid).set({
       'full_name': fullName,
-      'born_date': bornDate,
+      'born_date': bornDateValue,
       'gender': gender,
       if (profileImagePath != null) 'profile_image_path': profileImagePath,
       'updated_at': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 
-  // 3. Kullanıcı Profil Bilgilerini Getirme
+  // 3. Get User Profile Document
   Future<DocumentSnapshot?> getUserProfile() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    return await _firestore.collection('users').doc(user.uid).get();
+    try {
+      return await _firestore.collection('users').doc(user.uid).get();
+    } catch (e) {
+      print("❌ Error getting user profile: $e");
+      return null;
+    }
   }
 
-  // 4. Tüm Taramaları Getir - Stream
+  // 4. Delete a Specific Scan Result
+  Future<void> deleteScan(String scanId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('scans')
+          .doc(scanId)
+          .delete();
+      print("✅ Scan record deleted: $scanId");
+    } catch (e) {
+      print("❌ Error deleting scan: $e");
+      throw e;
+    }
+  }
+
+  // 5. Get All Scans - Reactive Stream
   Stream<List<ScanResult>> getScans() {
     final user = _auth.currentUser;
     if (user == null) return const Stream.empty();
@@ -67,12 +102,20 @@ class ScanService {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
-              .map((doc) => ScanResult.fromFirestore(doc))
+              .map((doc) {
+                try {
+                  return ScanResult.fromFirestore(doc);
+                } catch (e) {
+                  print("❌ Error parsing document: $e");
+                  return null;
+                }
+              })
+              .whereType<ScanResult>()
               .toList();
         });
   }
 
-  // 5. Belirli Bir Tarama Altındaki Favorileri Getir - Stream
+  // 6. Get Favorite Ingredients for a Scan - Reactive Stream
   Stream<List<Map<String, dynamic>>> getFavorites(
     String scanId,
     String collectionName,
@@ -91,7 +134,7 @@ class ScanService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // 6. Son Taramaları Getir (Limitli)
+  // 7. Get Recent Scans (Limited) - Reactive Stream
   Stream<List<ScanResult>> getRecentScans(int limit) {
     final user = _auth.currentUser;
     if (user == null) return const Stream.empty();
@@ -105,12 +148,19 @@ class ScanService {
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
-              .map((doc) => ScanResult.fromFirestore(doc))
+              .map((doc) {
+                try {
+                  return ScanResult.fromFirestore(doc);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<ScanResult>()
               .toList();
         });
   }
 
-  // 7. Favorilerden Ürün Kaldırma
+  // 8. Remove an Ingredient from Favorites
   Future<void> removeFavorite({
     required String scanId,
     required String collectionName,
@@ -128,9 +178,9 @@ class ScanService {
           .collection(collectionName)
           .doc(ingredientName)
           .delete();
-      print("✅ $ingredientName favorilerden kaldırıldı.");
+      print("✅ $ingredientName removed from favorites.");
     } catch (e) {
-      print("❌ Favori kaldırma hatası: $e");
+      print("❌ Favorite removal error: $e");
     }
   }
 }
