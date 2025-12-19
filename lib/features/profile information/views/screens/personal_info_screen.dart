@@ -1,6 +1,8 @@
+import 'dart:io'; // Dosya işlemleri için
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; // Tarih formatlama için eklendi
+import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart'; // Fotoğraf seçimi için
 import 'package:skin_type_app/constants/profile_colors.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
 import 'package:skin_type_app/models/scan_model.dart';
@@ -15,11 +17,13 @@ class PersonalInfoScreen extends StatefulWidget {
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   final ScanService _scanService = ScanService();
+  final ImagePicker _picker = ImagePicker();
 
   // --- State Variables ---
   String _fullName = "Not set yet";
   String _bornDate = "Not set yet";
   String _selectedGender = "";
+  String? _profileImagePath; // Fotoğrafın yerel yolunu tutar
 
   List<String> _skinConcerns = [];
   bool _isLoading = true;
@@ -31,7 +35,25 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _loadAllUserData();
   }
 
-  // Veritabanından verileri çekme ve dönüştürme işlemi
+  // Fotoğraf seçme fonksiyonu
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 500,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _profileImagePath = pickedFile.path;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+    }
+  }
+
   Future<void> _loadAllUserData() async {
     try {
       // 1. Load Profile from /users/{uid}
@@ -42,16 +64,15 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         setState(() {
           _fullName = data['full_name'] ?? "Not set yet";
           _selectedGender = data['gender'] ?? "";
+          _profileImagePath =
+              data['profile_image_path']; // Kayıtlı dosya yolunu al
 
-          // Timestamp to String Conversion
           final dynamic rawBornDate = data['born_date'];
           if (rawBornDate != null) {
             if (rawBornDate is Timestamp) {
-              // Eğer veritabanında Timestamp ise DateTime'a çevirip formatlıyoruz
               DateTime dateTime = rawBornDate.toDate();
               _bornDate = DateFormat('MMMM dd, yyyy').format(dateTime);
             } else {
-              // Eğer zaten String ise olduğu gibi alıyoruz
               _bornDate = rawBornDate.toString();
             }
           } else {
@@ -84,6 +105,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         fullName: _fullName == "Not set yet" ? "" : _fullName,
         bornDate: _bornDate == "Not set yet" ? "" : _bornDate,
         gender: _selectedGender,
+        profileImagePath: _profileImagePath, // Dosya yolunu gönder
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +190,62 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  const ProfileImageWidget(),
+                  // Profil Resmi Alanı (Düzenlendi)
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Center(
+                      child: Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey[200],
+                              // Dosya yolu varsa ve dosya yerinde duruyorsa göster
+                              backgroundImage:
+                                  (_profileImagePath != null &&
+                                      File(_profileImagePath!).existsSync())
+                                  ? FileImage(File(_profileImagePath!))
+                                  : null,
+                              child:
+                                  (_profileImagePath == null ||
+                                      !File(_profileImagePath!).existsSync())
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: ProfileColors.primaryGreen,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 30),
 
                   InteractiveField(

@@ -28,19 +28,21 @@ class ScanService {
     });
   }
 
-  // 2. Kullanıcı Profil Bilgilerini Güncelleme (born_date olarak güncellendi)
+  // 2. Kullanıcı Profil Bilgilerini Güncelleme (profileImagePath eklendi)
   Future<void> updateUserProfile({
     required String fullName,
     required String bornDate,
     required String gender,
+    String? profileImagePath,
   }) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
     await _firestore.collection('users').doc(user.uid).set({
       'full_name': fullName,
-      'born_date': bornDate, // Veritabanındaki mevcut alan ismiyle eşleşti
+      'born_date': bornDate,
       'gender': gender,
+      if (profileImagePath != null) 'profile_image_path': profileImagePath,
       'updated_at': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
