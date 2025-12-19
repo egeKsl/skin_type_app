@@ -237,7 +237,7 @@ class _NaturalIngredientsScreenState extends State<NaturalIngredientsScreen> {
                   const SizedBox(height: 15),
 
                   SizedBox(
-                    height: 550,
+                    height: 600,
                     child: _isLoading
                         ? Center(
                             child: CircularProgressIndicator(
