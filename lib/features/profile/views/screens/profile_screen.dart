@@ -1,69 +1,162 @@
-import 'dart:io'; // Resim dosyasını okumak için gerekli
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart'; // Bildirim izinleri için
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
 import 'package:skin_type_app/features/scan history/views/screens/scan_history_screen.dart';
 import 'package:skin_type_app/features/scan details/views/screens/scan_detail_screen.dart';
 import 'package:skin_type_app/models/scan_model.dart';
-// Personal Info ekranını import ediyoruz
 import 'package:skin_type_app/features/profile information/views/screens/personal_info_screen.dart';
 
 import '../widgets/section_header.dart';
 import '../widgets/profile_list_tile.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final ScanService _scanService = ScanService();
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
 
+class _ProfileScreenState extends State<ProfileScreen> {
+  final ScanService _scanService = ScanService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Profil Verileri
+  String _fullName = "Loading...";
+  String _email = "";
+  String _age = "Not set";
+  String _skinType = "No analysis yet";
+  String? _profileImagePath;
+  bool _isNotificationActive = false; // Varsayılan kapalı
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  // Veritabanından tüm profil ve son analiz verilerini yükler
+  Future<void> _loadProfileData() async {
+    try {
+      // 1. Kullanıcı dökümanını getir (İsim, Mail, Foto Yolu, Doğum Tarihi)
+      final profileDoc = await _scanService.getUserProfile();
+      final user = _auth.currentUser;
+
+      if (profileDoc != null && profileDoc.exists) {
+        final data = profileDoc.data() as Map<String, dynamic>;
+        setState(() {
+          _fullName = data['full_name'] ?? "Name not set";
+          _email = user?.email ?? data['email'] ?? "No email provided";
+          _profileImagePath = data['profile_image_path'];
+
+          // Yaş hesaplama
+          if (data['born_date'] != null) {
+            _age = _calculateAge(data['born_date']);
+          }
+        });
+      }
+
+      // 2. En son taramadan cilt tipini getir
+      _scanService.getRecentScans(1).listen((scans) {
+        if (scans.isNotEmpty && mounted) {
+          setState(() {
+            _skinType = scans.first.ciltTipi;
+            _isLoading = false;
+          });
+        } else {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      });
+    } catch (e) {
+      debugPrint("Error loading profile: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // Doğum tarihinden yaş hesaplayan yardımcı fonksiyon
+  String _calculateAge(dynamic bornDateData) {
+    try {
+      DateTime birthDate;
+      if (bornDateData is String) {
+        // "March 15, 1992" formatını parse eder
+        birthDate = DateFormat('MMMM dd, yyyy').parse(bornDateData);
+      } else {
+        return "Not set";
+      }
+
+      DateTime today = DateTime.now();
+      int age = today.year - birthDate.year;
+      if (today.month < birthDate.month ||
+          (today.month == birthDate.month && today.day < birthDate.day)) {
+        age--;
+      }
+      return "$age years";
+    } catch (e) {
+      return "Not set";
+    }
+  }
+
+  // Bildirim izni isteme işlemi
+  Future<void> _handleNotificationToggle(bool value) async {
+    if (value) {
+      PermissionStatus status = await Permission.notification.request();
+      if (status.isGranted) {
+        setState(() => _isNotificationActive = true);
+      } else {
+        // Kullanıcı reddederse switch'i kapalı tut
+        setState(() => _isNotificationActive = false);
+      }
+    } else {
+      setState(() => _isNotificationActive = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // Body'yi Column yaptık, SingleChildScrollView'ı aşağıya aldık.
-      // Böylece üst header sabit kalabilir veya kayabilir, tasarımı daha esnek olur.
       body: Column(
         children: [
-          // 1. YENİLENMİŞ ÜST HEADER ALANI (Ekranı dolduracak)
           _buildHeader(context),
-
-          // Geri kalan içerik kaydırılabilir alanda
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  // 2. PERSONAL INFORMATION (Tıklanabilir Yapıldı)
                   const SizedBox(height: 20),
                   const SectionHeader(title: "Personal Information"),
 
                   GestureDetector(
                     onTap: () => _navigateToPersonalInfo(context),
-                    child: const ProfileListTile(
+                    child: ProfileListTile(
                       icon: Icons.person,
                       title: "Full Name",
-                      value: "Sarah Johnson",
+                      value: _fullName,
                     ),
                   ),
                   GestureDetector(
                     onTap: () => _navigateToPersonalInfo(context),
-                    child: const ProfileListTile(
+                    child: ProfileListTile(
                       icon: Icons.email,
                       title: "Email",
-                      value: "sarah.j@email.com",
+                      value: _email,
                     ),
                   ),
                   GestureDetector(
                     onTap: () => _navigateToPersonalInfo(context),
-                    child: const ProfileListTile(
+                    child: ProfileListTile(
                       icon: Icons.cake,
                       title: "Age",
-                      value: "28 years",
+                      value: _age,
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // 3. SCAN HISTORY (Fotoğraflı ve Dinamik)
+                  // Scan History Section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
@@ -95,24 +188,18 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  // StreamBuilder ile Son 3 Veri
                   StreamBuilder<List<ScanResult>>(
                     stream: _scanService.getRecentScans(3),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
+                        return const Padding(
+                          padding: EdgeInsets.all(20.0),
                           child: LinearProgressIndicator(
                             color: Color(0xFF6B7C97),
                           ),
                         );
                       }
-
-                      if (snapshot.hasError) {
-                        return const Center(child: Text("Veri yüklenemedi"));
-                      }
-
                       final historyData = snapshot.data ?? [];
-
                       if (historyData.isEmpty) {
                         return const Padding(
                           padding: EdgeInsets.all(16.0),
@@ -122,19 +209,21 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         );
                       }
-
                       return Column(
-                        children: historyData.map((scan) {
-                          return _buildPhotoHistoryCard(context, scan);
-                        }).toList(),
+                        children: historyData
+                            .map(
+                              (scan) => _buildPhotoHistoryCard(context, scan),
+                            )
+                            .toList(),
                       );
                     },
                   ),
 
                   const SizedBox(height: 20),
 
-                  // 4. SETTINGS
                   const SectionHeader(title: "Settings"),
+
+                  // Notifications Switch Tile
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16.0,
@@ -160,8 +249,8 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                         Switch(
-                          value: true,
-                          onChanged: (val) {},
+                          value: _isNotificationActive,
+                          onChanged: _handleNotificationToggle,
                           activeColor: const Color(0xFFD1E9F6),
                           activeTrackColor: Colors.blue.shade200,
                         ),
@@ -179,11 +268,6 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.language,
                     title: "Language",
                     value: "English",
-                  ),
-                  const ProfileListTile(
-                    icon: Icons.star,
-                    title: "Rate App",
-                    value: "",
                   ),
                   const ProfileListTile(
                     icon: Icons.logout,
@@ -205,7 +289,7 @@ class ProfileScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
-    );
+    ).then((_) => _loadProfileData()); // Geri dönüldüğünde verileri tazele
   }
 
   Widget _buildPhotoHistoryCard(BuildContext context, ScanResult scan) {
@@ -241,17 +325,10 @@ class ProfileScreen extends StatelessWidget {
                 width: 60,
                 height: 60,
                 color: const Color(0xFFF0F4F8),
-                child: (scan.imagePath != null && scan.imagePath!.isNotEmpty)
-                    ? Image.file(
-                        File(scan.imagePath!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.broken_image_outlined,
-                            color: Colors.grey,
-                          );
-                        },
-                      )
+                child:
+                    (scan.imagePath != null &&
+                        File(scan.imagePath!).existsSync())
+                    ? Image.file(File(scan.imagePath!), fit: BoxFit.cover)
                     : const Icon(
                         Icons.camera_alt_outlined,
                         color: Color(0xFF6B7C97),
@@ -271,32 +348,11 @@ class ProfileScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF2D3142),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     scan.date,
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE3F2FD),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      "Match: ${scan.benzerlikYuzdesi}",
-                      style: const TextStyle(
-                        color: Color(0xFF1565C0),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -308,14 +364,11 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- YENİLENMİŞ HEADER TASARIMI ---
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        // 1. Üst Kısım (Mavi-Gri Alan)
         Container(
           width: double.infinity,
-          // MediaQuery ile üst status bar boşluğunu otomatik alıyoruz
           padding: EdgeInsets.only(
             top: MediaQuery.of(context).padding.top + 10,
             bottom: 20,
@@ -328,8 +381,6 @@ class ProfileScreen extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            // İsterseniz alt köşeleri hafif yuvarlatabilirsiniz:
-            // borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -353,54 +404,37 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
-
-        // 2. Profil Bilgileri (Resim ve İsim) - Hemen altına
         Container(
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage: const NetworkImage(
-                      "https://i.pravatar.cc/300?img=5",
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF6B7C97),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              // Profil Fotoğrafı (Firestore'dan gelen path'e göre)
+              CircleAvatar(
+                radius: 35,
+                backgroundColor: Colors.grey.shade300,
+                backgroundImage:
+                    (_profileImagePath != null &&
+                        File(_profileImagePath!).existsSync())
+                    ? FileImage(File(_profileImagePath!))
+                    : null,
+                child:
+                    (_profileImagePath == null ||
+                        !File(_profileImagePath!).existsSync())
+                    ? const Icon(Icons.person, size: 40, color: Colors.white)
+                    : null,
               ),
               const SizedBox(width: 15),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Sarah Johnson",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    _fullName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const Text(
-                    "sarah.j@email.com",
-                    style: TextStyle(color: Colors.grey),
-                  ),
+                  Text(_email, style: const TextStyle(color: Colors.grey)),
                   const SizedBox(height: 5),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -412,12 +446,16 @@ class ProfileScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
-                      children: const [
-                        Icon(Icons.face, size: 14, color: Colors.grey),
-                        SizedBox(width: 5),
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          size: 14,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 5),
                         Text(
-                          "Combination Skin",
-                          style: TextStyle(
+                          _skinType,
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF6B7C97),
                             fontWeight: FontWeight.bold,

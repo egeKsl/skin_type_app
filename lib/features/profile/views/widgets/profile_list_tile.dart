@@ -4,8 +4,15 @@ class ProfileListTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
+  final Widget? trailing; // Switch gibi özel elemanlar için eklendi
 
-  const ProfileListTile({super.key, required this.icon, required this.title, required this.value});
+  const ProfileListTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.value,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,20 +27,41 @@ class ProfileListTile extends StatelessWidget {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if(value.isNotEmpty) Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              Text(value.isNotEmpty ? value : title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              if (value.isNotEmpty)
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              Text(
+                value.isNotEmpty ? value : title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (title == "Language") const Text("English", style: TextStyle(color: Colors.grey, fontSize: 14)), 
-              const SizedBox(width: 10),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
-          ),
+          trailing:
+              trailing ??
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (title == "Language")
+                    const Text(
+                      "English",
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                  const SizedBox(width: 10),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
         ),
-        const Divider(indent: 70, endIndent: 16, height: 1), // İnce ayırıcı çizgi
+        const Divider(indent: 70, endIndent: 16, height: 1),
       ],
     );
   }
