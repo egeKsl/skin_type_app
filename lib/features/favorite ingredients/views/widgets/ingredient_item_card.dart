@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 class IngredientItemCard extends StatelessWidget {
   final String title;
-  final String description; // AI Analizi buraya gelecek
+  final String description; // AI Analysis will go here
   final IconData icon;
-  final Color iconColor; // İkonun ve etiketlerin ana rengi
-  final List<String> tags; // Temel faydalar listesi
-  final VoidCallback onRemove; // Favoriden kaldırma fonksiyonu
+  final Color iconColor; // Main color of the icon and tags
+  final List<String> tags; // List of key benefits
+  final VoidCallback onRemove; // Function to remove from favorites
 
   const IngredientItemCard({
     super.key,
@@ -38,7 +38,7 @@ class IngredientItemCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Sol Taraf: İkon Kutusu
+          // 1. Left Side: Icon Box
           Container(
             width: 50,
             height: 50,
@@ -50,12 +50,12 @@ class IngredientItemCard extends StatelessWidget {
           ),
           const SizedBox(width: 15),
 
-          // 2. Orta/Sağ Taraf: İçerik Bilgileri
+          // 2. Center/Right Side: Ingredient Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Başlık ve Favori Butonu
+                // Title and Favorite Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -70,7 +70,7 @@ class IngredientItemCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Favoriden Kaldırma Butonu (Dolu Kalp)
+                    // Remove from Favorites Button (Filled Heart)
                     GestureDetector(
                       onTap: onRemove,
                       child: Container(
@@ -90,7 +90,7 @@ class IngredientItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
 
-                // AI Analiz Açıklaması
+                // AI Analysis Description
                 Text(
                   description,
                   style: TextStyle(
@@ -101,7 +101,7 @@ class IngredientItemCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Temel Faydalar (Etiketler/Tags)
+                // Key Benefits (Labels/Tags)
                 if (tags.isNotEmpty)
                   Wrap(
                     spacing: 8,
@@ -134,7 +134,7 @@ class IngredientItemCard extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
 
-                // Öneri Durumu Çizgisi
+                // Recommendation Status Line
                 Row(
                   children: [
                     const Icon(
@@ -144,7 +144,7 @@ class IngredientItemCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      "Cilt tipinize uygun",
+                      "Suitable for your skin type",
                       style: TextStyle(
                         color: Colors.green.shade700,
                         fontWeight: FontWeight.w600,

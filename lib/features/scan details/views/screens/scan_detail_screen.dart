@@ -25,7 +25,7 @@ class ScanDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. ÖZET KARTI (Cilt Tipi ve Yüzde)
+            // 1. SUMMARY CARD (Skin Type and Percentage)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -70,13 +70,13 @@ class ScanDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // 2. BELİRTİLER VE İHTİYAÇLAR (Yan Yana)
+            // 2. SYMPTOMS AND NEEDS (Side by Side)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _buildInfoCard(
-                    title: "Belirtiler",
+                    title: "Symptoms",
                     items: scanResult.belirtiler,
                     icon: Icons.search,
                     color: Colors.orange.shade100,
@@ -86,7 +86,7 @@ class ScanDetailScreen extends StatelessWidget {
                 const SizedBox(width: 15),
                 Expanded(
                   child: _buildInfoCard(
-                    title: "İhtiyaçlar",
+                    title: "Needs",
                     items: scanResult.ihtiyaclar,
                     icon: Icons.water_drop,
                     color: Colors.blue.shade100,
@@ -97,8 +97,8 @@ class ScanDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // 3. İÇERİK ANALİZİ (Doğal vs Kimyasal)
-            _buildSectionHeader("İçerik Analizi"),
+            // 3. INGREDIENT ANALYSIS (Natural vs Chemical)
+            _buildSectionHeader("Ingredient Analysis"),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(16),
@@ -114,16 +114,16 @@ class ScanDetailScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Yeni yapıya göre List<dynamic> (Map listesi) gönderiliyor
+                  // Sent as List<dynamic> (Map list) according to the new structure
                   _buildIngredientRow(
-                    "Doğal İçerikler",
+                    "Natural Ingredients",
                     scanResult.dogalIcerikler,
                     Icons.eco,
                     Colors.green,
                   ),
                   const Divider(height: 30),
                   _buildIngredientRow(
-                    "Aktif İçerikler",
+                    "Active Ingredients",
                     scanResult.kimyasalIcerikler,
                     Icons.science,
                     Colors.purple,
@@ -133,18 +133,18 @@ class ScanDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // 4. MAKYAJ TAVSİYELERİ
-            _buildSectionHeader("Makyaj Rehberi"),
+            // 4. MAKEUP RECOMMENDATIONS
+            _buildSectionHeader("Makeup Guide"),
             const SizedBox(height: 10),
             _buildMakeupCard(
-              "Kullanılması Gerekenler",
+              "Do (Recommended)",
               scanResult.makyajOnerileri,
               Icons.check_circle_outline,
               Colors.green,
             ),
             const SizedBox(height: 10),
             _buildMakeupCard(
-              "Uzak Durulması Gerekenler",
+              "Don't (To Avoid)",
               scanResult.makyajUzakDurulacaklar,
               Icons.cancel_outlined,
               Colors.red,
@@ -156,7 +156,7 @@ class ScanDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- YARDIMCI WIDGET'LAR ---
+  // --- HELPER WIDGETS ---
 
   Widget _buildSectionHeader(String title) {
     return Text(
@@ -220,7 +220,7 @@ class ScanDetailScreen extends StatelessWidget {
     );
   }
 
-  // Yeni Model Yapısına (List<dynamic>) uygun hale getirildi
+  // Adapted to the new Model structure (List<dynamic>)
   Widget _buildIngredientRow(
     String title,
     List<dynamic> items,
@@ -245,7 +245,7 @@ class ScanDetailScreen extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: items.map((item) {
-            // Her bir item bir Map olduğu için 'isim' alanını çekiyoruz
+            // Since each item is a Map, we extract the 'isim' (name) field
             final String name = item is Map
                 ? (item['isim'] ?? "Unknown")
                 : item.toString();
