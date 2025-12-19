@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:permission_handler/permission_handler.dart'; // Bildirim izinleri için
+import 'package:permission_handler/permission_handler.dart';
 import 'package:skin_type_app/common/widgets/top_menu_overlay.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
 import 'package:skin_type_app/features/scan history/views/screens/scan_history_screen.dart';
@@ -24,13 +24,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ScanService _scanService = ScanService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Profil Verileri
+  // State Variables
   String _fullName = "Loading...";
   String _email = "";
   String _age = "Not set";
   String _skinType = "No analysis yet";
   String? _profileImagePath;
-  bool _isNotificationActive = false; // Varsayılan kapalı
+  bool _isNotificationActive = false; // Initial state: off
   bool _isLoading = true;
 
   @override
@@ -39,50 +39,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  // Veritabanından tüm profil ve son analiz verilerini yükler
+  // Veritabanından profil ve analiz verilerini çeker
   Future<void> _loadProfileData() async {
     try {
-      // 1. Kullanıcı dökümanını getir (İsim, Mail, Foto Yolu, Doğum Tarihi)
       final profileDoc = await _scanService.getUserProfile();
       final user = _auth.currentUser;
 
       if (profileDoc != null && profileDoc.exists) {
         final data = profileDoc.data() as Map<String, dynamic>;
-        setState(() {
-          _fullName = data['full_name'] ?? "Name not set";
-          _email = user?.email ?? data['email'] ?? "No email provided";
-          _profileImagePath = data['profile_image_path'];
+        if (mounted) {
+          setState(() {
+            _fullName = data['full_name'] ?? "Name not set";
+            _email = user?.email ?? data['email'] ?? "No email provided";
+            _profileImagePath = data['profile_image_path'];
 
-          // Yaş hesaplama
-          if (data['born_date'] != null) {
-            _age = _calculateAge(data['born_date']);
-          }
-        });
+            if (data['born_date'] != null) {
+              _age = _calculateAge(data['born_date']);
+            }
+          });
+        }
       }
 
-      // 2. En son taramadan cilt tipini getir
       _scanService.getRecentScans(1).listen((scans) {
         if (scans.isNotEmpty && mounted) {
           setState(() {
             _skinType = scans.first.ciltTipi;
             _isLoading = false;
           });
-        } else {
-          if (mounted) setState(() => _isLoading = false);
+        } else if (mounted) {
+          setState(() => _isLoading = false);
         }
       });
     } catch (e) {
-      debugPrint("Error loading profile: $e");
+      debugPrint("❌ Error loading profile: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Doğum tarihinden yaş hesaplayan yardımcı fonksiyon
   String _calculateAge(dynamic bornDateData) {
     try {
       DateTime birthDate;
       if (bornDateData is String) {
-        // "March 15, 1992" formatını parse eder
         birthDate = DateFormat('MMMM dd, yyyy').parse(bornDateData);
       } else {
         return "Not set";
@@ -100,19 +97,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Bildirim izni isteme işlemi
-  Future<void> _handleNotificationToggle(bool value) async {
+  // Bildirim izni isteyen fonksiyon - Sonucu bool döner
+  Future<bool> _requestNotificationPermission(bool value) async {
     if (value) {
       PermissionStatus status = await Permission.notification.request();
-      if (status.isGranted) {
-        setState(() => _isNotificationActive = true);
-      } else {
-        // Kullanıcı reddederse switch'i kapalı tut
-        setState(() => _isNotificationActive = false);
-      }
-    } else {
-      setState(() => _isNotificationActive = false);
+      return status.isGranted;
     }
+    return false;
   }
 
   @override
@@ -124,6 +115,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildHeader(context),
           Expanded(
             child: SingleChildScrollView(
+              // Kaydırma pozisyonunu korumak için key ekleyebiliriz
+              key: const PageStorageKey('profile_scroll'),
               child: Column(
                 children: [
                   const SizedBox(height: 20),
@@ -167,14 +160,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: EdgeInsets.zero,
                         ),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ScanHistoryScreen(),
-                              ),
-                            );
-                          },
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ScanHistoryScreen(),
+                            ),
+                          ),
                           child: const Text(
                             "View All",
                             style: TextStyle(
@@ -192,11 +183,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     stream: _scanService.getRecentScans(3),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.all(20.0),
-                          child: LinearProgressIndicator(
-                            color: Color(0xFF6B7C97),
-                          ),
+                        return const SizedBox(
+                          height: 100,
+                          child: Center(child: CircularProgressIndicator()),
                         );
                       }
                       final historyData = snapshot.data ?? [];
@@ -220,42 +209,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                   const SizedBox(height: 20),
-
                   const SectionHeader(title: "Settings"),
 
-                  // Notifications Switch Tile
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.blue.shade50,
-                          child: const Icon(
-                            Icons.notifications,
-                            color: Color(0xFF6B7C97),
-                          ),
+                  // 🔥 FIX: StatefulBuilder kullanarak sadece bu kısmı rebuild ediyoruz
+                  StatefulBuilder(
+                    builder: (context, setLocalState) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
                         ),
-                        const SizedBox(width: 15),
-                        const Expanded(
-                          child: Text(
-                            "Notifications",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              child: const Icon(
+                                Icons.notifications,
+                                color: Color(0xFF6B7C97),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 15),
+                            const Expanded(
+                              child: Text(
+                                "Notifications",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            Switch(
+                              value: _isNotificationActive,
+                              onChanged: (val) async {
+                                bool isGranted =
+                                    await _requestNotificationPermission(val);
+                                // Sadece bu widget'ı günceller, sayfa en başa atmaz
+                                setLocalState(() {
+                                  _isNotificationActive = isGranted;
+                                });
+                                // Parent state'i sessizce güncelle (navigasyon vb. durumlar için)
+                                _isNotificationActive = isGranted;
+                              },
+                              activeColor: const Color(0xFFD1E9F6),
+                              activeTrackColor: Colors.blue.shade200,
+                            ),
+                          ],
                         ),
-                        Switch(
-                          value: _isNotificationActive,
-                          onChanged: _handleNotificationToggle,
-                          activeColor: const Color(0xFFD1E9F6),
-                          activeTrackColor: Colors.blue.shade200,
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const Divider(indent: 70, endIndent: 16, height: 1),
 
@@ -289,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
-    ).then((_) => _loadProfileData()); // Geri dönüldüğünde verileri tazele
+    ).then((_) => _loadProfileData());
   }
 
   Widget _buildPhotoHistoryCard(BuildContext context, ScanResult scan) {
@@ -408,7 +409,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              // Profil Fotoğrafı (Firestore'dan gelen path'e göre)
               CircleAvatar(
                 radius: 35,
                 backgroundColor: Colors.grey.shade300,

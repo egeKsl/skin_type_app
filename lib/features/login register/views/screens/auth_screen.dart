@@ -38,7 +38,7 @@ class _AuthScreenState extends State<AuthScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: ProfileColors.primaryGreen,
+              primary: const Color.fromRGBO(156, 39, 176, 1),
               onPrimary: Colors.white,
               onSurface: ProfileColors.textDark,
             ),
@@ -121,13 +121,18 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: ProfileColors.primaryGreen.withOpacity(0.1),
+                    color: const Color.fromRGBO(
+                      156,
+                      39,
+                      176,
+                      1,
+                    ).withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.spa_rounded,
                     size: 50,
-                    color: ProfileColors.primaryGreen,
+                    color: const Color.fromRGBO(156, 39, 176, 1),
                   ),
                 ),
               ),
@@ -170,7 +175,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     _obscurePassword
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
-                    color: ProfileColors.primaryGreen,
+                    color: const Color.fromRGBO(156, 39, 176, 1),
                   ),
                   onPressed: () {
                     setState(() {
@@ -199,7 +204,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: ProfileColors.primaryGreen,
+                    backgroundColor: const Color.fromRGBO(156, 39, 176, 1),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -231,7 +236,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text(
                       _isLoginMode ? "Sign Up" : "Login",
                       style: const TextStyle(
-                        color: ProfileColors.primaryGreen,
+                        color: const Color.fromRGBO(156, 39, 176, 1),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -305,7 +310,10 @@ class CustomAuthField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hintText,
               border: InputBorder.none,
-              prefixIcon: Icon(prefixIcon, color: ProfileColors.primaryGreen),
+              prefixIcon: Icon(
+                prefixIcon,
+                color: const Color.fromRGBO(156, 39, 176, 1),
+              ),
               suffixIcon: suffixIcon,
             ),
           ),
