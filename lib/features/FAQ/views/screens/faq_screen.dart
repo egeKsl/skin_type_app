@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Veri Modeli (Değişmedi)
 class FaqItem {
   final String question;
   final String answer;
@@ -21,35 +20,41 @@ class FaqScreen extends StatefulWidget {
 }
 
 class _FaqScreenState extends State<FaqScreen> {
-  // Sıkça Sorulan Sorular Listesi (Veriler değişmedi)
   final List<FaqItem> _faqData = [
     FaqItem(
       question: "What does the app do?",
-      answer: "The app provides AI-powered skin analysis and personalized skincare guidance based on your skin type and needs.",
+      answer:
+          "The app provides AI-powered skin analysis and personalized skincare guidance based on your skin type and needs.",
     ),
     FaqItem(
       question: "How accurate is the skin analysis?",
-      answer: "The analysis uses advanced AI technology designed for high accuracy, but results may vary depending on individual differences.",
+      answer:
+          "The analysis uses advanced AI technology designed for high accuracy, but results may vary depending on individual differences.",
     ),
     FaqItem(
       question: "Are the product recommendations mandatory?",
-      answer: "No, All recommendations are optional and meant to support your skincare decisions. You can continue using your own products.",
+      answer:
+          "No, All recommendations are optional and meant to support your skincare decisions. You can continue using your own products.",
     ),
     FaqItem(
       question: "Is my personal data secure?",
-      answer: "Yes. Your data is encrypted, stored safely, and never shared with third parties.",
+      answer:
+          "Yes. Your data is encrypted, stored safely, and never shared with third parties.",
     ),
     FaqItem(
       question: "Do I need an account to use the app?",
-      answer: "Yes. An account allows you to save your skin analysis results, routines, and personalized recommendations.",
+      answer:
+          "Yes. An account allows you to save your skin analysis results, routines, and personalized recommendations.",
     ),
     FaqItem(
       question: "How often should I re-analyze my skin?",
-      answer: "It is recommended to refresh your skin analysis every 2–4 weeks for the most accurate and updated results.",
+      answer:
+          "It is recommended to refresh your skin analysis every 2–4 weeks for the most accurate and updated results.",
     ),
     FaqItem(
       question: "Which skin types does the app support?",
-      answer: "The app supports all major skin types, including oily, dry, combination, normal, and sensitive.",
+      answer:
+          "The app supports all major skin types, including oily, dry, combination, normal, and sensitive.",
     ),
   ];
 
@@ -86,7 +91,6 @@ class _FaqScreenState extends State<FaqScreen> {
     );
   }
 
-  // Arama Çubuğu Widget'ı (Değişmedi)
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -106,13 +110,12 @@ class _FaqScreenState extends State<FaqScreen> {
     );
   }
 
-  // ÖZEL Genişletilebilir Paneller Listesi (Görsele uyacak şekilde tamamen yeniden yazıldı)
   Widget _buildCustomExpansionPanelList() {
     return Column(
       children: List.generate(_faqData.length, (index) {
         FaqItem item = _faqData[index];
         bool isExpanded = item.isExpanded;
-        
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
           child: Container(
@@ -138,7 +141,10 @@ class _FaqScreenState extends State<FaqScreen> {
                   },
                   borderRadius: BorderRadius.circular(15),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 18.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 18.0,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -153,18 +159,24 @@ class _FaqScreenState extends State<FaqScreen> {
                           ),
                         ),
                         Icon(
-                          isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                          isExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
                           color: Colors.black54,
                         ),
                       ],
                     ),
                   ),
                 ),
-                
+
                 // Cevap Alanı (Açıldığında Görünür)
                 if (isExpanded)
                   Padding(
-                    padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 18.0),
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 18.0,
+                    ),
                     child: Text(
                       item.answer,
                       style: TextStyle(

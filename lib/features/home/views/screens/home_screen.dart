@@ -476,7 +476,6 @@ class _HomeScreenState extends State<HomeScreen>
                       width: 150,
                       height: 150,
                       color: Colors.grey[300],
-                      // DEĞİŞİKLİK: Burada artık profil fotosu canlı (reactive) olarak dinleniyor
                       child:
                           (_profileImagePath != null &&
                               File(_profileImagePath!).existsSync())

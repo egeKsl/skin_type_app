@@ -9,7 +9,6 @@ import 'package:skin_type_app/features/scan history/views/screens/scan_history_s
 import 'package:skin_type_app/features/scan details/views/screens/scan_detail_screen.dart';
 import 'package:skin_type_app/models/scan_model.dart';
 import 'package:skin_type_app/features/profile information/views/screens/personal_info_screen.dart';
-
 import '../widgets/section_header.dart';
 import '../widgets/profile_list_tile.dart';
 
@@ -30,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _age = "Not set";
   String _skinType = "No analysis yet";
   String? _profileImagePath;
-  bool _isNotificationActive = false; // Initial state: off
+  bool _isNotificationActive = false;
   bool _isLoading = true;
 
   @override
@@ -39,7 +38,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  // Veritabanından profil ve analiz verilerini çeker
   Future<void> _loadProfileData() async {
     try {
       final profileDoc = await _scanService.getUserProfile();
@@ -97,7 +95,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Bildirim izni isteyen fonksiyon - Sonucu bool döner
   Future<bool> _requestNotificationPermission(bool value) async {
     if (value) {
       PermissionStatus status = await Permission.notification.request();

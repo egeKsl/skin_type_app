@@ -23,7 +23,7 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<dynamic> _kimyasalIcerikler = [];
-  Set<String> _favoritedNames = {}; // Favorilenmiş içeriklerin isimlerini tutar
+  Set<String> _favoritedNames = {};
   String? _currentScanId;
   String _matchPercentage = "95%";
   bool _isLoading = true;
@@ -54,26 +54,26 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
                   _isLoading = false;
                 });
 
-                // Favorileri yükle
                 _loadFavorites();
 
-                debugPrint("✅ Veri yüklendi, Scan ID: $_currentScanId");
+                debugPrint(
+                  "The data has been loaded, Scan ID: $_currentScanId",
+                );
               } else if (mounted) {
                 setState(() => _isLoading = false);
               }
             },
             onError: (error) {
-              debugPrint("❌ Firebase dinleme hatası: $error");
+              debugPrint("Firebase listening error has been occured: $error");
               if (mounted) setState(() => _isLoading = false);
             },
           );
     } catch (e) {
-      debugPrint("❌ Genel hata: $e");
+      debugPrint("Common error: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Belirli scan altındaki favorileri getiren fonksiyon
   void _loadFavorites() {
     final user = _auth.currentUser;
     if (user == null || _currentScanId == null) return;
@@ -94,7 +94,6 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
         });
   }
 
-  // Favori butonuna tıklandığında çalışacak fonksiyon
   Future<void> _toggleFavorite(dynamic item) async {
     final user = _auth.currentUser;
     final String ingredientName = item['isim'] ?? "Unknown";
@@ -112,7 +111,7 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
     try {
       if (_favoritedNames.contains(ingredientName)) {
         await docRef.delete();
-        debugPrint("🗑️ Favorilerden silindi: $ingredientName");
+        debugPrint("deleted from favorites: $ingredientName");
       } else {
         await docRef.set({
           'isim': ingredientName,
@@ -121,10 +120,10 @@ class _ChemicalIngredientsScreenState extends State<ChemicalIngredientsScreen> {
           'ai_analizi': item['ai_analizi'],
           'saved_at': FieldValue.serverTimestamp(),
         });
-        debugPrint("⭐ Favorilere eklendi: $ingredientName");
+        debugPrint("added to favorites: $ingredientName");
       }
     } catch (e) {
-      debugPrint("❌ Favori işlemi hatası: $e");
+      debugPrint("an error has been occured during favoriting process: $e");
     }
   }
 

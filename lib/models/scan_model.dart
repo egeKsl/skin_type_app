@@ -8,15 +8,13 @@ class ScanResult {
   final String benzerlikYuzdesi;
   final List<String> belirtiler;
   final List<String> ihtiyaclar;
-  // Detaylı nesne listeleri (isim, ai_analizi, faydalar vb. içerir)
   final List<dynamic> dogalIcerikler;
   final List<dynamic> kimyasalIcerikler;
-  // Favori olarak işaretlenmiş içeriklerin isimlerini tutan listeler
   final List<String> dogalFavoriler;
   final List<String> kimyasalFavoriler;
   final List<String> makyajOnerileri;
   final List<String> makyajUzakDurulacaklar;
-  final Map<String, dynamic> rutin; // Sabah ve akşam rutinlerini içeren harita
+  final Map<String, dynamic> rutin;
   final String? imagePath;
 
   ScanResult({

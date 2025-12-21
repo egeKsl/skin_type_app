@@ -6,7 +6,7 @@ class InfoSectionCard extends StatelessWidget {
   final Color color;
   final Color iconColor;
   final List<String> items;
-  final IconData titleIcon; // <--- YENİ EKLENEN PARAMETRE
+  final IconData titleIcon;
 
   const InfoSectionCard({
     super.key,
@@ -15,8 +15,7 @@ class InfoSectionCard extends StatelessWidget {
     required this.color,
     required this.iconColor,
     required this.items,
-    this.titleIcon = Icons
-        .warning_amber_rounded, // <--- VARSAYILAN DEĞER (Eğer göndermezseniz bu çıkar)
+    this.titleIcon = Icons.warning_amber_rounded,
   });
 
   @override
@@ -43,7 +42,6 @@ class InfoSectionCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  // BURASI DEĞİŞTİ: Artık sabit ikon yerine parametreyi kullanıyor
                   Icon(titleIcon, color: iconColor),
                   const SizedBox(width: 8),
                   Text(
@@ -85,7 +83,6 @@ class InfoSectionCard extends StatelessWidget {
                         children: [
                           Icon(Icons.diamond, size: 8, color: iconColor),
                           const SizedBox(width: 8),
-                          // Text(item, style: const TextStyle(fontSize: 13)), // Taşma sorunu olmaması için Expanded ekledim
                           Expanded(
                             child: Text(
                               item,

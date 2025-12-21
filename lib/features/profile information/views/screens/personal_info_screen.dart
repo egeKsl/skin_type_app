@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-//import 'package:skin_type_app/constants/profile_colors.dart';
 import 'package:skin_type_app/core/services/scan_service.dart';
-//import 'package:skin_type_app/models/scan_model.dart';
 import '../widgets/personal_info_widgets.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
